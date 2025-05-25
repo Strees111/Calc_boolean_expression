@@ -33,7 +33,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new VarNode(*this);
+        return new VarNode(name, value);
     };
 };
 class ConstNode: public BooleanExpressionNode
@@ -52,7 +52,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new ConstNode(*this);
+        return new ConstNode(value);
     };
 };
 class UnarNode : public BooleanExpressionNode {
@@ -62,6 +62,7 @@ public:
     explicit UnarNode(BooleanExpressionNode *node) : next(node) {}
     BooleanExpressionNode* getNext(){return next;}
     ~UnarNode() override {delete next;}
+    BooleanExpressionNode* clone() override = 0;
 };
 class NegationNode : public UnarNode
 {
@@ -76,7 +77,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new NegationNode(*this);
+        return new NegationNode(next->clone());
     }
 };
 class BinNode : public BooleanExpressionNode {
@@ -91,6 +92,7 @@ public:
         delete left;
         delete right;
     }
+    BooleanExpressionNode* clone() override = 0;
 };
 class conjunctionNode : public BinNode
 {
@@ -98,7 +100,7 @@ public:
     conjunctionNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
-        return "(" + left->str() + " & " + right->str() + ")";
+        return left->str() + " & " + right->str();
     }
     [[nodiscard]] bool calc() const override
     {
@@ -106,7 +108,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new conjunctionNode(*this);
+        return new conjunctionNode(left->clone(),right->clone());
     }
 };
 class disjunctionNode : public BinNode
@@ -123,16 +125,16 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new disjunctionNode(*this);
+        return new disjunctionNode(left->clone(),right->clone());
     }
 };
-class squareNode : public BinNode
+class XORNode : public BinNode
 {
 public:
-    explicit squareNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    explicit XORNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
-        return "(" + left->str() + " ^ " + right->str() + ")";
+        return "(" + left->str() + " + " + right->str() + ")";
     }
     [[nodiscard]] bool calc() const override
     {
@@ -140,7 +142,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new squareNode(*this);
+        return new XORNode(left->clone(),right->clone());
     }
 };
 class implicationNode : public BinNode
@@ -157,7 +159,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new implicationNode(*this);
+        return new implicationNode(left->clone(),right->clone());
     }
 };
 class UnimplicationNode : public BinNode
@@ -174,7 +176,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new UnimplicationNode(*this);
+        return new UnimplicationNode(left->clone(),right->clone());
     }
 };
 class equivalentNode : public BinNode
@@ -191,7 +193,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new equivalentNode(*this);
+        return new equivalentNode(left->clone(),right->clone());
     }
 };
 class SchaefferNode : public BinNode
@@ -208,7 +210,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new SchaefferNode(*this);
+        return new SchaefferNode(left->clone(),right->clone());
     }
 };
 class PierNode : public BinNode
@@ -225,13 +227,14 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new PierNode(*this);
+        return new PierNode(left->clone(),right->clone());
     }
 };
 class BooleanExpression
 {
 private:
     BooleanExpressionNode* root{};
+    mutable std::string zh;
     static BooleanExpressionNode* Postfix2Tree(const char* expr);
     void InfixFilter(const char *instr, char *outstr);
     void Infix2Postfix(const char *instr, char *outstr);
@@ -243,8 +246,11 @@ public:
     BooleanExpression(BooleanExpression &&) noexcept;
     BooleanExpression& operator=(const BooleanExpression &);
     BooleanExpression& operator=(BooleanExpression &&) noexcept;
+    void setVars(BooleanExpressionNode* Node, bool value[]) const;
+    bool Monotonic(const std::string& left,const std::string& right) const;
     [[nodiscard]] BooleanExpression zhegalkin() const;
     [[nodiscard]] std::string table() const;
+    std::string GetZhegalkin() const;
     explicit operator std::string() const;
     [[nodiscard]] bool isFullSystem(const std::vector<BooleanExpression>&);
 };

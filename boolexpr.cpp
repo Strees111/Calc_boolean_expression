@@ -95,7 +95,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 S.pop();
                 left = S.top();
                 S.pop();
-                result = new squareNode(left, right);
+                result = new XORNode(left, right);
                 break;
             case '~':
                 if (S.empty()) throw 1;
@@ -340,11 +340,6 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
 BooleanExpression::BooleanExpression(const char* str): root(nullptr)
 {
     size_t len = strlen(str);
-    for (size_t i = 0; i < len; i++)
-    {
-        std::cout << str[i];
-    }
-    std::cout << std::endl;
     len = (len < 10) ? 20 : 2 * len;
     auto str_infix = std::make_unique<char[]>(len);
     auto str_postfix = std::make_unique<char[]>(len);
@@ -360,7 +355,7 @@ BooleanExpression::BooleanExpression(const char* str): root(nullptr)
     }
 }
 
-BooleanExpression::BooleanExpression(const BooleanExpression& a): root(nullptr)
+BooleanExpression::BooleanExpression(const BooleanExpression& a): root(nullptr), zh(a.zh)
 {
     if (a.root)
     {
@@ -368,7 +363,7 @@ BooleanExpression::BooleanExpression(const BooleanExpression& a): root(nullptr)
     }
 }
 
-BooleanExpression::BooleanExpression(BooleanExpression&& a) noexcept: root(a.root)
+BooleanExpression::BooleanExpression(BooleanExpression&& a) noexcept: root(a.root), zh(std::move(a.zh))
 {
     a.root = nullptr;
 }
@@ -379,6 +374,7 @@ BooleanExpression& BooleanExpression::operator=(const BooleanExpression& a)
     {
         BooleanExpression tmp(a);
         std::swap(root, tmp.root);
+        std::swap(zh, tmp.zh);
     }
     return *this;
 }
@@ -389,6 +385,7 @@ BooleanExpression& BooleanExpression::operator=(BooleanExpression&& a) noexcept
     {
         delete root;
         root = a.root;
+        zh = std::move(a.zh);
         a.root = nullptr;
     }
     return *this;
@@ -404,7 +401,6 @@ BooleanExpression BooleanExpression::zhegalkin() const
     int varcount = 0;
     int size = q.size();
     std::string root_string = root->str();
-    // int min_index = INT_MAX;
     std::set<char> set;
     for (size_t i = 0; i < root_string.size(); i++)
     {
@@ -462,7 +458,7 @@ BooleanExpression BooleanExpression::zhegalkin() const
             {
                 if (term.size() >= 2)
                 {
-                    term += '^';
+                    term += '&';
                 }
                 term += std::string("x") + temp[j];
             }
@@ -485,6 +481,7 @@ BooleanExpression BooleanExpression::zhegalkin() const
             result += terms[i];
         }
     }
+    zh = result;
     return BooleanExpression(result.c_str());
 }
 
@@ -549,37 +546,49 @@ std::string BooleanExpression::table() const
             }
         }
     }
-    std::function<void(BooleanExpressionNode*)> setVars = [&](BooleanExpressionNode* node)
-    {
-        auto varNode = dynamic_cast<VarNode*>(node);
-        if (varNode)
-        {
-            varNode->setValue(value[varNode->str()[1] - '0']);
-        }
-        auto binNode = dynamic_cast<BinNode*>(node);
-        if (binNode)
-        {
-            setVars(binNode->getLeft());
-            setVars(binNode->getRight());
-        }
-        auto unarNode = dynamic_cast<UnarNode*>(node);
-        if (unarNode)
-        {
-            setVars(unarNode->getNext());
-        }
-    };
     std::string result;
     int combinations = 1 << varcount;
     for (int i = 0; i < combinations; i++) {
         for (int j = 0; j < varcount; j++) {
             value[(variables[varcount - 1 - j] - '0')] = (i & (1 << j)) != 0;
         }
-        setVars(root);
+        setVars(root,value);
         bool expressionValue = root->calc();
         result += expressionValue ? "1" : "0";
     }
     return result;
 }
+
+std::string BooleanExpression::GetZhegalkin() const
+{
+    if (zh.empty())
+    {
+        BooleanExpression q = zhegalkin();
+    }
+    return zh;
+}
+
+
+void BooleanExpression::setVars(BooleanExpressionNode* node, bool value[]) const
+{
+    auto varNode = dynamic_cast<VarNode*>(node);
+    if (varNode)
+    {
+        varNode->setValue(value[varNode->str()[1] - '0']);
+    }
+    auto binNode = dynamic_cast<BinNode*>(node);
+    if (binNode)
+    {
+        setVars(binNode->getLeft(),value);
+        setVars(binNode->getRight(),value);
+    }
+    auto unarNode = dynamic_cast<UnarNode*>(node);
+    if (unarNode)
+    {
+        setVars(unarNode->getNext(),value);
+    }
+}
+
 
 BooleanExpression::operator std::string() const
 {
@@ -590,9 +599,105 @@ BooleanExpression::operator std::string() const
     return {};
 }
 
-bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>&)
+bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>& a)
 {
-    return false;
+    std::vector<std::string> terms;
+    for (size_t i = 0; i < a.size(); i++)
+    {
+        terms.push_back(a[i].table());
+    }
+    bool SaveZero = false;
+    bool SaveOne = false;
+    bool SelfDual = false;
+    bool Monotonous = false;
+    bool Linear = false;
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        if (terms[i].front() != '0')
+        {
+            SaveZero = true;
+            break;
+        }
+    }
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        if (terms[i].back() != '1')
+        {
+            SaveOne = true;
+            break;
+        }
+    }
+    for (size_t i = 0; i < a.size(); i++)
+    {
+        bool found = false;
+        for (size_t j = 0; j < terms[i].size()/2; j++)
+        {
+            if (terms[i][j] == terms[i][terms[i].size() - j - 1])
+            {
+                found = true;
+                break;
+            }
+        }
+        if (found)
+        {
+            SelfDual = true;
+            break;
+        }
+    }
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        if (terms[i].size() == 1)
+        {
+            continue;
+        }
+        if (terms[i].size() == 2)
+        {
+            if (terms[i][0] > terms[i][1])
+            {
+                Monotonous = true;
+                break;
+            }
+            continue;
+        }
+        std::string left = terms[i].substr(0,terms[i].size()/2);
+        std::string right = terms[i].substr(terms[i].size()/2);
+        if (!Monotonic(left,right))
+        {
+            Monotonous = true;
+            break;
+        }
+    }
+    for (size_t i = 0; i < a.size(); i++)
+    {
+        BooleanExpression q = a[i].zhegalkin();
+        std::string w = q.root->str();
+        if (w.find('&') != std::string::npos)
+        {
+            Linear = true;
+            break;
+        }
+    }
+    return SaveOne && SaveZero && SelfDual && Monotonous && Linear;
+}
+
+bool BooleanExpression::Monotonic(const std::string& left,const std::string& right) const
+{
+    if (left.size() == 1 || right.size() == 1)
+    {
+        return true;
+    }
+    for (size_t i = 0; i < left.size(); i++)
+    {
+        if (left[i] > right[i])
+        {
+            return false;
+        }
+    }
+    std::string left1 = left.substr(0,left.size()/2);
+    std::string right1 = left.substr(left.size()/2);
+    std::string left2 = right.substr(0,right.size()/2);
+    std::string right2 = right.substr(right.size()/2);
+    return Monotonic(left1,right1) && Monotonic(left2,right2);
 }
 
 BooleanExpression::~BooleanExpression()

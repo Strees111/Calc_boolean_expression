@@ -22,23 +22,39 @@ int main(int argc, char* argv[]){
   if (strcmp(argv[1],"-h") == 0 || strcmp(argv[1],"?") == 0) {}
   try{
     std::string expression;
-    while (std::getline(infin, expression))
+    if (strcmp(argv[1],"-isfull") == 0)
     {
-      BooleanExpression c(expression.c_str());
-      if (strcmp(argv[1],"-table") == 0)
+      std::vector<BooleanExpression> v;
+      BooleanExpression c1;
+      while (std::getline(infin, expression))
       {
-        std::string s = c.table();
-        outfin << s << std::endl;
-
+        BooleanExpression c(expression.c_str());
+        v.push_back(c);
       }
-      // else if (strcmp(argv[1],"-isfull") == 0)
-      // {
-      //   std::vector<BooleanExpression> v;
-      //   c.isFullSystem(v);
-      // }
-      else if (strcmp(argv[1],"-zh") == 0)
+      bool check = c1.isFullSystem(v);
+      if (check)
       {
-        BooleanExpression a = c.zhegalkin();
+        outfin << "yes";
+      }
+      else
+      {
+        outfin << "no";
+      }
+    }
+    else
+    {
+      while (std::getline(infin, expression))
+      {
+        BooleanExpression c(expression.c_str());
+        if (strcmp(argv[1],"-table") == 0)
+        {
+          std::string s = c.table();
+          outfin << s << std::endl;
+        }
+        else if (strcmp(argv[1],"-zh") == 0)
+        {
+          outfin << c.GetZhegalkin() << std::endl;
+        }
       }
     }
   } catch (const Error& a) {
