@@ -247,10 +247,11 @@ public:
     BooleanExpression& operator=(const BooleanExpression &);
     BooleanExpression& operator=(BooleanExpression &&) noexcept;
     void setVars(BooleanExpressionNode* Node, bool value[]) const;
-    bool Monotonic(const std::string& left,const std::string& right) const;
+    std::string GetTable() const;
     [[nodiscard]] BooleanExpression zhegalkin() const;
     [[nodiscard]] std::string table() const;
     std::string GetZhegalkin() const;
     explicit operator std::string() const;
-    [[nodiscard]] bool isFullSystem(const std::vector<BooleanExpression>&);
 };
+[[nodiscard]] bool isFullSystem(const std::vector<BooleanExpression>&);
+bool Monotonic(const std::string& left,const std::string& right);

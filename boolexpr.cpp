@@ -2,15 +2,17 @@
 
 #include <memory>
 #include <set>
+#include <sstream>
+#include <iomanip>
 
 BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
 {
     int index = 0;
     std::stack<BooleanExpressionNode*> S{};
     std::string str1;
-    BooleanExpressionNode *result = nullptr;
-    BooleanExpressionNode *right = nullptr;
-    BooleanExpressionNode *left = nullptr;
+    BooleanExpressionNode* result = nullptr;
+    BooleanExpressionNode* right = nullptr;
+    BooleanExpressionNode* left = nullptr;
 
     try
     {
@@ -107,7 +109,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (ch >= '0' && ch <= '9' && !str1.empty())
                 {
                     str1 += ch;
-                    result = new VarNode(str1,0);
+                    result = new VarNode(str1, 0);
                 }
                 else if (ch >= '0' && ch <= '1' && str1.empty())
                 {
@@ -192,7 +194,7 @@ int actionsColNumber(const char ch)
     case ')': return 11;
     }
     if (ch == 'x' ||
-    (ch >= '0' && ch <= '9'))
+        (ch >= '0' && ch <= '9'))
         return 12;
     return 13;
 }
@@ -253,14 +255,15 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
 {
     int i = 0;
     int j = 0;
+    int k = 1;
     char ch;
     std::string buf;
     try
     {
         while ((ch = instr[i++]) != '\0')
         {
-            if (!buf.empty() && buf[0] == 'x' && buf.size() < 2 && ch == ' ') throw ErrorLackOfIndexing(buf.c_str(), i);
-            if (!buf.empty() && ch == 'x') throw ErrorDuplicationOfVariables(instr, i);
+            if (!buf.empty() && buf[0] == 'x' && buf.size() < 2 && ch == ' ') throw ErrorLackOfIndexing(buf.c_str(), k);
+            if (!buf.empty() && ch == 'x') throw ErrorDuplicationOfVariables(instr, k);
             if (ch == ' ' || ch == '\t' || ch == '\r') continue;
             if (ch == 'x' || (ch >= '0' && ch <= '9'))
             {
@@ -274,6 +277,7 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
                     {
                         outstr[j++] = c;
                     }
+                    k++;
                     buf.clear();
                 }
                 if (ch == '!' || ch == '~')
@@ -296,7 +300,7 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
                 {
                     outstr[j++] = '<';
                 }
-                else if (ch == '>' )
+                else if (ch == '>')
                 {
                     outstr[j++] = '>';
                 }
@@ -308,7 +312,7 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
                 {
                     outstr[j++] = '|';
                 }
-                else if (ch == '^' )
+                else if (ch == '^')
                 {
                     outstr[j++] = '^';
                 }
@@ -318,8 +322,9 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
                 }
                 else
                 {
-                    throw ErrorUnknownSymbol(instr, i);
+                    throw ErrorUnknownSymbol(instr, k);
                 }
+                ++k;
             }
         }
         if (!buf.empty())
@@ -404,7 +409,7 @@ BooleanExpression BooleanExpression::zhegalkin() const
     std::set<char> set;
     for (size_t i = 0; i < root_string.size(); i++)
     {
-        if (root_string[i] >= '1' && root_string[i] <= '9')
+        if (root_string[i] >= '0' && root_string[i] <= '9')
         {
             set.insert(root_string[i]);
         }
@@ -433,7 +438,7 @@ BooleanExpression BooleanExpression::zhegalkin() const
             pascal[i][j] = pascal[i - 1][j] ^ pascal[i - 1][j + 1];
         }
     }
-    std::vector<bool> left_column(q.size(),false);
+    std::vector<bool> left_column(q.size(), false);
     for (int i = 0; i < combination; i++)
     {
         left_column[i] = pascal[i][0];
@@ -548,11 +553,13 @@ std::string BooleanExpression::table() const
     }
     std::string result;
     int combinations = 1 << varcount;
-    for (int i = 0; i < combinations; i++) {
-        for (int j = 0; j < varcount; j++) {
+    for (int i = 0; i < combinations; i++)
+    {
+        for (int j = 0; j < varcount; j++)
+        {
             value[(variables[varcount - 1 - j] - '0')] = (i & (1 << j)) != 0;
         }
-        setVars(root,value);
+        setVars(root, value);
         bool expressionValue = root->calc();
         result += expressionValue ? "1" : "0";
     }
@@ -579,14 +586,57 @@ void BooleanExpression::setVars(BooleanExpressionNode* node, bool value[]) const
     auto binNode = dynamic_cast<BinNode*>(node);
     if (binNode)
     {
-        setVars(binNode->getLeft(),value);
-        setVars(binNode->getRight(),value);
+        setVars(binNode->getLeft(), value);
+        setVars(binNode->getRight(), value);
     }
     auto unarNode = dynamic_cast<UnarNode*>(node);
     if (unarNode)
     {
-        setVars(unarNode->getNext(),value);
+        setVars(unarNode->getNext(), value);
     }
+}
+
+std::string BooleanExpression::GetTable() const
+{
+    std::string result = table();
+    size_t size = result.size();
+    size_t varcount = 0;
+    std::string root_string = root->str();
+    std::set<char> set;
+    for (size_t i = 0; i < root_string.size(); i++)
+    {
+        if (root_string[i] >= '0' && root_string[i] <= '9')
+        {
+            set.insert(root_string[i]);
+        }
+    }
+    std::set<char>::iterator it = set.begin();
+    std::string temp;
+    while (it != set.end())
+    {
+        temp += *it;
+        it++;
+    }
+    while (size >>= 1)
+    {
+        varcount++;
+    }
+    std::ostringstream q;
+    for (int i = 0; i < varcount; i++)
+    {
+        q << std::setw(4) << ('x' + std::string(1, temp[i])) << " ";
+    }
+    q << std::setw(6) << "F" << std::endl;
+    int combination = 1 << varcount;
+    for (int i = 0; i < combination; ++i)
+    {
+        for (int j = varcount - 1; j >= 0; --j)
+        {
+            q << std::setw(5) << ((i & (1 << j)) != 0) << " ";
+        }
+        q << std::setw(6) << result[i] << std::endl;
+    }
+    return q.str();
 }
 
 
@@ -599,7 +649,7 @@ BooleanExpression::operator std::string() const
     return {};
 }
 
-bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>& a)
+bool isFullSystem(const std::vector<BooleanExpression>& a)
 {
     std::vector<std::string> terms;
     for (size_t i = 0; i < a.size(); i++)
@@ -630,7 +680,7 @@ bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>& a)
     for (size_t i = 0; i < a.size(); i++)
     {
         bool found = false;
-        for (size_t j = 0; j < terms[i].size()/2; j++)
+        for (size_t j = 0; j < terms[i].size() / 2; j++)
         {
             if (terms[i][j] == terms[i][terms[i].size() - j - 1])
             {
@@ -659,9 +709,9 @@ bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>& a)
             }
             continue;
         }
-        std::string left = terms[i].substr(0,terms[i].size()/2);
-        std::string right = terms[i].substr(terms[i].size()/2);
-        if (!Monotonic(left,right))
+        std::string left = terms[i].substr(0, terms[i].size() / 2);
+        std::string right = terms[i].substr(terms[i].size() / 2);
+        if (!Monotonic(left, right))
         {
             Monotonous = true;
             break;
@@ -669,9 +719,8 @@ bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>& a)
     }
     for (size_t i = 0; i < a.size(); i++)
     {
-        BooleanExpression q = a[i].zhegalkin();
-        std::string w = q.root->str();
-        if (w.find('&') != std::string::npos)
+        std::string q = std::string(a[i].zhegalkin());
+        if (q.find('&') != std::string::npos)
         {
             Linear = true;
             break;
@@ -680,7 +729,7 @@ bool BooleanExpression::isFullSystem(const std::vector<BooleanExpression>& a)
     return SaveOne && SaveZero && SelfDual && Monotonous && Linear;
 }
 
-bool BooleanExpression::Monotonic(const std::string& left,const std::string& right) const
+bool Monotonic(const std::string& left, const std::string& right)
 {
     if (left.size() == 1 || right.size() == 1)
     {
@@ -693,11 +742,11 @@ bool BooleanExpression::Monotonic(const std::string& left,const std::string& rig
             return false;
         }
     }
-    std::string left1 = left.substr(0,left.size()/2);
-    std::string right1 = left.substr(left.size()/2);
-    std::string left2 = right.substr(0,right.size()/2);
-    std::string right2 = right.substr(right.size()/2);
-    return Monotonic(left1,right1) && Monotonic(left2,right2);
+    std::string left1 = left.substr(0, left.size() / 2);
+    std::string right1 = left.substr(left.size() / 2);
+    std::string left2 = right.substr(0, right.size() / 2);
+    std::string right2 = right.substr(right.size() / 2);
+    return Monotonic(left1, right1) && Monotonic(left2, right2);
 }
 
 BooleanExpression::~BooleanExpression()
