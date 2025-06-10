@@ -26,9 +26,7 @@ public:
     ErrorPostfix(const char *s, int position) : str(s), index(position) {}
     std::string what() const {
         return std::string("Error in postfix string '")
-               + str
-               + std::string("' at position ")
-               + std::to_string(index+1);
+               + str;
     }
 };
 
@@ -39,9 +37,7 @@ public:
     ErrorBracketsClose(const char *s, int position) : str(s), index(position) {}
     std::string what() const {
         return std::string("Error with brackets. There are no '(' for ')' in '")
-               + str
-               + std::string("' at position ")
-               + std::to_string(index+1);
+               + str;
     }
 };
 class ErrorBracketsOpen : public Error {
@@ -51,9 +47,7 @@ public:
     ErrorBracketsOpen(const char *s, int position) : str(s), index(position) {}
     std::string what() const {
         return std::string("Error with brackets. There are no ')' for '(' in '")
-               + str
-               + std::string("' at position ")
-               + std::to_string(index+1);
+               + str;
     }
 };
 
@@ -78,7 +72,7 @@ public:
     ErrorUnknownSymbol(const char *s, int index): str(s), index(index) {}
     std::string what() const
     {
-        return std::string("Unknown symbol '") + str + std::string("' at position ") + std::to_string(index+1);
+        return std::string("Unknown symbol '") + str;
     }
 };
 
@@ -90,7 +84,7 @@ public:
     ErrorLackOfIndexing(const char *s, int index): str(s), index(index) {}
     std::string what() const
     {
-        return std::string("Lack of indexing '") + str + std::string("' at position ") + std::to_string(index+1);
+        return std::string("Lack of indexing '") + str;
     }
 };
 
@@ -102,6 +96,29 @@ public:
     ErrorDuplicationOfVariables(const char *s, int index): str(s), index(index) {}
     std::string what() const
     {
-        return std::string("Duplication of variables '") + str + std::string("' at position ") + std::to_string(index+1);
+        return std::string("Duplication of variables '") + str;
+    }
+};
+
+class ErrorOverabundanceOfIndexing : public Error
+{
+    std::string str;
+    int index;
+public:
+    ErrorOverabundanceOfIndexing(const char *s, int index): str(s), index(index) {}
+    std::string what() const
+    {
+        return std::string("Overabundance of variables ") + str;
+    }
+};
+class ErrorInvalidConstant : public Error
+{
+    std::string str;
+    int index;
+public:
+    ErrorInvalidConstant(const char *s, int index): str(s), index(index) {}
+    std::string what() const
+    {
+        return std::string("Invalid Constant ") + str;
     }
 };
