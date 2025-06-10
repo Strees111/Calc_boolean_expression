@@ -1,6 +1,9 @@
 import boolcalc
 import telebot
 from telebot import types
+import io
+from PIL import Image, ImageDraw, ImageFont
+import csv
 bot = telebot.TeleBot("7908905794:AAEa1uuoorYLkkN14mZ1E8K7GWh5qWRX5t4")
 @bot.message_handler(commands=['start'])
 def handle_start(message):
@@ -30,24 +33,75 @@ def handle_start(message):
         "<code>=</code>   эквиваленция (x ≡ y)\n"
         "<code>|</code>   штрих Шеффера (x | y)\n"
         "<code>^</code>   стрелка Пирса (x ↓ y)\n\n"
+        "<b>Примечание!!!!!!:</b> Если в выражений различных переменных больше 6, то таблица истинности будет выводиться ввиде CSV файла."
     )
     bot.send_message(message.chat.id, welcome_message, reply_markup=markup, parse_mode='HTML')
+def table_to_csv(table_text):
+    lines = table_text.strip().split('\n')
 
+    csv_buffer = io.StringIO()
+    csv_writer = csv.writer(csv_buffer)
+
+    for line in lines:
+        row = [cell for cell in line.split(' ') if cell]
+        csv_writer.writerow(row)
+
+    byte_buffer = io.BytesIO()
+    byte_buffer.write(csv_buffer.getvalue().encode('utf-8'))
+    byte_buffer.seek(0)
+
+    return byte_buffer
+def text_to_image(text, width=800, height=None, bg_color=(255, 255, 255)):
+    lines = text.count('\n') + 1
+    if height is None:
+        height = max(300, lines * 25)
+
+    image = Image.new("RGB", (width, height), bg_color)
+    draw = ImageDraw.Draw(image)
+
+    try:
+        font = ImageFont.truetype("DejaVuSans.ttf", 16)
+    except:
+        font = ImageFont.load_default()
+
+    draw.text((20, 20), text, fill=(0, 0, 0), font=font)
+
+    bio = io.BytesIO()
+    bio.name = 'result.png'
+    image.save(bio, 'PNG')
+    bio.seek(0)
+
+    return bio
 @bot.message_handler()
 def on_click(message):
     try:
         if message.text == 'Таблица':
             result_table = boolcalc.process_expression("-table",message.chat.id).split('\n')
-            table = boolcalc.process_expression("-FullTable",message.chat.id)
-            bot.send_message(message.chat.id, f"Table results: \n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(result_table) if expr])}\n\n{table}")
+            print(len(result_table[0]))
+            bot.send_message(message.chat.id, f"Вектор функция: \n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(result_table) if expr])}")
+            table = boolcalc.process_expression("-FullTable",message.chat.id).split('=')
+            i = 0
+            j = 0
+            for expr in table:
+                if expr == '' or expr == '\n':
+                    continue
+                if len(result_table[j]) > 64:
+                    csv_file = table_to_csv(expr)
+                    bot.send_document(message.chat.id, csv_file, caption=f"Таблица истинности для {boolcalc.get_expression(message.chat.id,j)} в формате CSV", visible_file_name=f"{i+1}truth_table.csv")
+                    i += 1
+                else:
+                    text = f"Таблица истинности для {boolcalc.get_expression(message.chat.id,j)}: \n{expr}"
+                    img = text_to_image(text)
+                    bot.send_photo(message.chat.id, photo=img)
+                j += 1
             print(f"Table results:\n{result_table} \n{table}")
         elif message.text == 'Полином Жегалкина':
             result_zh = boolcalc.process_expression("-zh", message.chat.id).split('\n')
-            bot.send_message(message.chat.id, f"Zhegalkin results:\n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(result_zh) if expr])}")
+            bot.send_message(message.chat.id, f"Жегалкин:\n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(result_zh) if expr])}")
             print(f"Zhegalkin results:\n{result_zh}")
         elif message.text == 'Проверка на полноту':
             is_full = boolcalc.process_expression("-isfull", message.chat.id)
-            bot.send_message(message.chat.id, f"Is full system: {is_full}")
+            bot.send_message(message.chat.id, f"Полнота системы: {is_full}")
             print(f"Is full system: {is_full}")
         elif message.text == 'Справка':
             msg = bot.send_message(message.chat.id,"<b>Справка по боту для работы с булевыми выражениями:</b>\n\n",parse_mode='HTML')
@@ -84,6 +138,7 @@ def help(message):
         "<b>Таблица</b>: Построить таблицу истинности для всех добавленных выражений.\n"
         "<b>Полином Жегалкина</b>: Построить полином Жегалкина для всех добавленных выражений.\n"
         "<b>Проверка на полноту</b>: Проверить систему добавленных функций на полноту.\n\n"
+        "<b>Примечание!!!!!!:</b> Если в выражений различных переменных больше 6, то таблица истинности будет выводиться ввиде CSV файла."
     )
     bot.send_message(message.chat.id, help_text, parse_mode='HTML')
 

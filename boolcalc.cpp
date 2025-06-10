@@ -56,6 +56,12 @@ std::string print_expressions(int id)
     }
     return output.str();
 }
+std::string get_expression(int id, int index)
+{
+    std::ostringstream output;
+    output << std::string(global::s[id][index]) << std::endl;
+    return output.str();
+}
 
 std::string process_expression(const std::string& mode, int id)
 {
@@ -82,7 +88,7 @@ std::string process_expression(const std::string& mode, int id)
     {
         for (auto& expr : global::s[id])
         {
-            output << expr.GetTable() << std::endl;
+            output << expr.GetTable() << '=' << std::endl;
         }
     }
     return output.str();
@@ -96,4 +102,5 @@ PYBIND11_MODULE(boolcalc, m)
     m.def("clear_expressions", &clear_expressions);
     m.def("empty_expressions", &empty_expressions);
     m.def("print_expressions", &print_expressions);
+    m.def("get_expression", &get_expression);
 }
