@@ -188,7 +188,7 @@ def add_expresion(message):
         boolcalc.add_expression(message.chat.id, message.text)
         bot.send_message(message.chat.id,f"Выражение '{message.text}' добавлено в список.")
     except Exception as e:
-        error_message = f"Не удалось добвить выражение. Ошибка: {e}"
+        error_message = f"Не удалось добавить выражение. Ошибка: {e}"
         bot.send_message(message.chat.id, error_message)
 def delete_expresion(message):
     try:
