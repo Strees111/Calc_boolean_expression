@@ -59,7 +59,7 @@ std::string print_expressions(int id)
 std::string get_expression(int id, int index)
 {
     std::ostringstream output;
-    output << std::string(global::s[id][index]) << std::endl;
+    output << std::string(global::s[id][index]) << std::flush;
     return output.str();
 }
 
@@ -94,8 +94,13 @@ std::string process_expression(const std::string& mode, int id)
     return output.str();
 }
 
+int get_user_count() {
+    return global::s.size();
+}
+
 PYBIND11_MODULE(boolcalc, m)
 {
+    m.def("get_user_count", &get_user_count);
     m.def("process_expression", &process_expression);
     m.def("add_expression", &add_expression);
     m.def("delete_expression", &delete_expression);

@@ -624,17 +624,17 @@ std::string BooleanExpression::GetTable() const
     std::ostringstream q;
     for (int i = 0; i < varcount; i++)
     {
-        q << std::setw(4) << ('x' + std::string(1, temp[i])) << " ";
+        q << std::setw(2) << ('x' + std::string(1, temp[i])) << " ";
     }
-    q << std::setw(6) << "F" << std::endl;
+    q << std::setw(2) << "F" << std::endl;
     int combination = 1 << varcount;
     for (int i = 0; i < combination; ++i)
     {
         for (int j = varcount - 1; j >= 0; --j)
         {
-            q << std::setw(5) << ((i & (1 << j)) != 0) << " ";
+            q << std::setw(2) << ((i & (1 << j)) != 0) << " ";
         }
-        q << std::setw(6) << result[i] << std::endl;
+        q << std::setw(2) << result[i] << std::endl;
     }
     return q.str();
 }

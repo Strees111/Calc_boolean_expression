@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, "./build")
+
 import boolcalc
 import telebot
 from telebot import types
@@ -53,16 +56,18 @@ def table_to_csv(table_text):
     return byte_buffer
 def text_to_image(text, width=800, height=None, bg_color=(255, 255, 255)):
     lines = text.count('\n') + 1
+    width = text.find('\n') + 1
+    width = max(width * 3, 250)
     if height is None:
-        height = max(300, lines * 25)
+        height = max(150, lines * 22)
 
     image = Image.new("RGB", (width, height), bg_color)
     draw = ImageDraw.Draw(image)
 
     try:
-        font = ImageFont.truetype("DejaVuSans.ttf", 16)
+        font = ImageFont.truetype("fonts/NotoSansMono.ttf", 16)
     except:
-        font = ImageFont.load_default()
+        font = ImageFont.load_default(16)
 
     draw.text((20, 20), text, fill=(0, 0, 0), font=font)
 
@@ -74,10 +79,10 @@ def text_to_image(text, width=800, height=None, bg_color=(255, 255, 255)):
     return bio
 @bot.message_handler()
 def on_click(message):
+    print(boolcalc.get_user_count())
     try:
         if message.text == 'Таблица':
             result_table = boolcalc.process_expression("-table",message.chat.id).split('\n')
-            print(len(result_table[0]))
             bot.send_message(message.chat.id, f"Вектор функция: \n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(result_table) if expr])}")
             table = boolcalc.process_expression("-FullTable",message.chat.id).split('=')
             i = 0
@@ -90,9 +95,9 @@ def on_click(message):
                     bot.send_document(message.chat.id, csv_file, caption=f"Таблица истинности для {boolcalc.get_expression(message.chat.id,j)} в формате CSV", visible_file_name=f"{i+1}truth_table.csv")
                     i += 1
                 else:
-                    text = f"Таблица истинности для {boolcalc.get_expression(message.chat.id,j)}: \n{expr}"
+                    text = f"{expr}"
                     img = text_to_image(text)
-                    bot.send_photo(message.chat.id, photo=img)
+                    bot.send_photo(message.chat.id, photo=img, caption=f'Таблица истинности для\n{boolcalc.get_expression(message.chat.id,j)}')
                 j += 1
             print(f"Table results:\n{result_table} \n{table}")
         elif message.text == 'Полином Жегалкина':

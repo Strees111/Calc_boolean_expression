@@ -1,0 +1,4 @@
+telebot
+pillow
+pybind11
+aiogram
