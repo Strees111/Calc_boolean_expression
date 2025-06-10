@@ -8,8 +8,17 @@ from telebot import types
 import io
 from PIL import Image, ImageDraw, ImageFont
 import csv
+from dotenv import load_dotenv
+import os
 
-bot = AsyncTeleBot("7908905794:AAEa1uuoorYLkkN14mZ1E8K7GWh5qWRX5t4")
+load_dotenv()  # loads variables from .env into os.environ
+
+api_key = os.getenv("TELEGRAM_API_KEY")
+
+if not api_key:
+    raise ValueError("No TELEGRAM_API_KEY set in environment")
+
+bot = AsyncTeleBot(api_key)
 
 user_states = {}
 STATE_WAITING_FOR_ADD = 'add_expression'

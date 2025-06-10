@@ -2,3 +2,5 @@ telebot
 pillow
 pybind11
 asyncio
+aiohttp
+dotenv

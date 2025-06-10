@@ -1,0 +1,44 @@
+# Python cache and env
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+.env  
+
+# Build artifacts
+/build/
+/build-*/
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.out
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Docker files you might want to exclude
+# (usually Dockerfile should be tracked, but if you have .dockerignore)
+.dockerignore
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+.cache/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Coverage reports
+.coverage
+htmlcov/
