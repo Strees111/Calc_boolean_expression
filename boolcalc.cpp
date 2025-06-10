@@ -84,6 +84,20 @@ std::string process_expression(const std::string& mode, int id)
             output << expr.table() << std::endl;
         }
     }
+    else if (mode == "-sdnf")
+    {
+        for (auto& expr : global::s[id])
+        {
+            output << expr.GetSDNF() << std::endl;
+        }
+    }
+    else if (mode == "-sknf")
+    {
+        for (auto& expr : global::s[id])
+        {
+            output << expr.GetSKNF() << std::endl;
+        }
+    }
     else if (mode == "-FullTable")
     {
         for (auto& expr : global::s[id])

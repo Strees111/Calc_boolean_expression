@@ -11,7 +11,9 @@ def handle_start(message):
     btn1 = types.KeyboardButton('Таблица')
     btn2 = types.KeyboardButton('Полином Жегалкина')
     btn3 = types.KeyboardButton('Проверка на полноту')
-    markup.row(btn1, btn2, btn3)
+    btn8 = types.KeyboardButton('СКНФ')
+    btn9 = types.KeyboardButton('СДНФ')
+    markup.row(btn1, btn2, btn3, btn8, btn9)
     btn4 = types.KeyboardButton('Справка')
     btn5 = types.KeyboardButton('Очистка системы')
     btn6 = types.KeyboardButton('Отобразить систему')
@@ -103,6 +105,14 @@ def on_click(message):
             is_full = boolcalc.process_expression("-isfull", message.chat.id)
             bot.send_message(message.chat.id, f"Полнота системы: {is_full}")
             print(f"Is full system: {is_full}")
+        elif message.text == 'СКНФ':
+            sknf = boolcalc.process_expression("-sknf", message.chat.id).split('\n')
+            bot.send_message(message.chat.id, f"СКНФ:\n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(sknf) if expr])}")
+            print(f"Is full system: {sknf}")
+        elif message.text == 'СДНФ':
+            sdnf = boolcalc.process_expression("-sdnf", message.chat.id).split('\n')
+            bot.send_message(message.chat.id, f"СДНФ:\n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(sdnf) if expr])}")
+            print(f"Is full system: {sdnf}")
         elif message.text == 'Справка':
             msg = bot.send_message(message.chat.id,"<b>Справка по боту для работы с булевыми выражениями:</b>\n\n",parse_mode='HTML')
             help(msg)
