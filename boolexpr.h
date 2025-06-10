@@ -1,11 +1,6 @@
 #pragma once
-#include <iostream>
 #include <string>
-#include <cstring>
-#include <stack>
-#include <functional>
-#include "Error.h"
-#include <algorithm>
+#include <vector>
 
 
 class BooleanExpressionNode
@@ -22,7 +17,7 @@ private:
     std::string name;
     bool value;
 public:
-    explicit VarNode(std::string  name, bool value) : name(std::move(name)), value(value) {}
+    explicit VarNode(std::string name, bool value) : name(std::move(name)), value(value) {}
     void setValue(bool value) { this->value = value; }
     [[nodiscard]] std::string str() const override {
         return name;
@@ -94,10 +89,10 @@ public:
     }
     BooleanExpressionNode* clone() override = 0;
 };
-class conjunctionNode : public BinNode
+class ConjunctionNode : public BinNode
 {
 public:
-    conjunctionNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    ConjunctionNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return left->str() + " & " + right->str();
@@ -108,13 +103,13 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new conjunctionNode(left->clone(),right->clone());
+        return new ConjunctionNode(left->clone(),right->clone());
     }
 };
-class disjunctionNode : public BinNode
+class DisjunctionNode : public BinNode
 {
 public:
-    disjunctionNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    DisjunctionNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return "(" + left->str() + " | " + right->str() + ")";
@@ -125,7 +120,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new disjunctionNode(left->clone(),right->clone());
+        return new DisjunctionNode(left->clone(),right->clone());
     }
 };
 class XORNode : public BinNode
@@ -145,10 +140,10 @@ public:
         return new XORNode(left->clone(),right->clone());
     }
 };
-class implicationNode : public BinNode
+class ImplicationNode : public BinNode
 {
 public:
-    implicationNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    ImplicationNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return "(" + left->str() + " > " + right->str() + ")";
@@ -159,13 +154,13 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new implicationNode(left->clone(),right->clone());
+        return new ImplicationNode(left->clone(),right->clone());
     }
 };
-class UnimplicationNode : public BinNode
+class ConverseNode : public BinNode
 {
 public:
-    UnimplicationNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    ConverseNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return "(" + left->str() + " < " + right->str() + ")";
@@ -176,13 +171,13 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new UnimplicationNode(left->clone(),right->clone());
+        return new ConverseNode(left->clone(),right->clone());
     }
 };
-class equivalentNode : public BinNode
+class EquivalentNode : public BinNode
 {
 public:
-    equivalentNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    EquivalentNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return "(" + left->str() + " = " + right->str() + ")";
@@ -193,13 +188,13 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new equivalentNode(left->clone(),right->clone());
+        return new EquivalentNode(left->clone(),right->clone());
     }
 };
-class SchaefferNode : public BinNode
+class NANDNode : public BinNode
 {
 public:
-    SchaefferNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    NANDNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return "(" + left->str() + " | " + right->str() + ")";
@@ -210,13 +205,13 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new SchaefferNode(left->clone(),right->clone());
+        return new NANDNode(left->clone(),right->clone());
     }
 };
-class PierNode : public BinNode
+class NORNode : public BinNode
 {
 public:
-    PierNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
+    NORNode(BooleanExpressionNode* left, BooleanExpressionNode* right): BinNode(left,right){}
     [[nodiscard]]std::string str() const override
     {
         return "(" + left->str() + " ^ " + right->str() + ")";
@@ -227,7 +222,7 @@ public:
     }
     BooleanExpressionNode* clone() override
     {
-        return new PierNode(left->clone(),right->clone());
+        return new NORNode(left->clone(),right->clone());
     }
 };
 class BooleanExpression

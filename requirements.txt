@@ -1,4 +1,4 @@
 telebot
 pillow
 pybind11
-aiogram
+asyncio

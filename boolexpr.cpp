@@ -1,9 +1,13 @@
 #include "boolexpr.h"
+#include "Error.h"
 
 #include <memory>
 #include <set>
+#include <stack>
 #include <sstream>
 #include <iomanip>
+#include <functional>
+#include <cstring>
 
 BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
 {
@@ -35,7 +39,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new conjunctionNode(left, right);
+                result = new ConjunctionNode(left, right);
                 break;
             case 'v':
                 if (S.empty()) throw 1;
@@ -44,7 +48,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new disjunctionNode(left, right);
+                result = new DisjunctionNode(left, right);
                 break;
             case '>':
                 if (S.empty()) throw 1;
@@ -53,7 +57,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new implicationNode(left, right);
+                result = new ImplicationNode(left, right);
                 break;
             case '<':
                 if (S.empty()) throw 1;
@@ -62,7 +66,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new UnimplicationNode(left, right);
+                result = new ConverseNode(left, right);
                 break;
             case '=':
                 if (S.empty()) throw 1;
@@ -71,7 +75,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new equivalentNode(left, right);
+                result = new EquivalentNode(left, right);
                 break;
             case '|':
                 if (S.empty()) throw 1;
@@ -80,7 +84,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new SchaefferNode(left, right);
+                result = new NANDNode(left, right);
                 break;
             case '^':
                 if (S.empty()) throw 1;
@@ -89,7 +93,7 @@ BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
                 if (S.empty()) throw 1;
                 left = S.top();
                 S.pop();
-                result = new PierNode(left, right);
+                result = new NORNode(left, right);
                 break;
             case '+':
                 if (S.empty()) throw 1;
@@ -414,12 +418,9 @@ BooleanExpression BooleanExpression::zhegalkin() const
             set.insert(root_string[i]);
         }
     }
-    std::set<char>::iterator it = set.begin();
     std::string temp;
-    while (it != set.end())
-    {
-        temp += *it;
-        it++;
+    for (const auto& elem : set) {
+        temp += elem;
     }
     while (size >>= 1)
     {
@@ -610,12 +611,9 @@ std::string BooleanExpression::GetTable() const
             set.insert(root_string[i]);
         }
     }
-    std::set<char>::iterator it = set.begin();
     std::string temp;
-    while (it != set.end())
-    {
-        temp += *it;
-        it++;
+    for (const auto& elem : set) {
+        temp += elem;
     }
     while (size >>= 1)
     {
