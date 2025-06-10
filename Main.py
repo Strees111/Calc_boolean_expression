@@ -32,7 +32,9 @@ async def handle_start(message):
     btn1 = types.KeyboardButton('Таблица')
     btn2 = types.KeyboardButton('Полином Жегалкина')
     btn3 = types.KeyboardButton('Проверка на полноту')
-    markup.row(btn1, btn2, btn3)
+    btn8 = types.KeyboardButton('СКНФ')
+    btn9 = types.KeyboardButton('СДНФ')
+    markup.row(btn1, btn2, btn3, btn8, btn9)
     btn4 = types.KeyboardButton('Справка')
     btn5 = types.KeyboardButton('Очистка системы')
     btn6 = types.KeyboardButton('Отобразить систему')
@@ -137,6 +139,14 @@ async def handle_text_messages(message):
         elif message.text == 'Проверка на полноту':
             is_full = await asyncio.to_thread(boolcalc.process_expression, "-isfull", message.chat.id)
             await bot.send_message(message.chat.id, f"Полнота системы: {is_full}")
+        elif message.text == 'СКНФ':
+            sknf = await asyncio.to_thread(boolcalc.process_expression, "-sknf", message.chat.id)
+            sknf = sknf.split('\n')
+            await bot.send_message(message.chat.id, f"СКНФ:\n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(sknf) if expr])}")
+        elif message.text == 'СДНФ':
+            sknf = await asyncio.to_thread(boolcalc.process_expression, "-sdnf", message.chat.id)
+            sknf = sknf.split('\n')
+            await bot.send_message(message.chat.id, f"СДНФ:\n{'\n'.join([f'{i+1}. {expr}' for i, expr in enumerate(sknf) if expr])}")
         elif message.text == 'Справка':
             await help(message)
         elif message.text == 'Очистка системы':

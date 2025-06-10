@@ -230,6 +230,8 @@ class BooleanExpression
 private:
     BooleanExpressionNode* root{};
     mutable std::string zh;
+    mutable std::string SD;
+    mutable std::string SK;
     static BooleanExpressionNode* Postfix2Tree(const char* expr);
     void InfixFilter(const char *instr, char *outstr);
     void Infix2Postfix(const char *instr, char *outstr);
@@ -244,8 +246,12 @@ public:
     void setVars(BooleanExpressionNode* Node, bool value[]) const;
     std::string GetTable() const;
     [[nodiscard]] BooleanExpression zhegalkin() const;
+    [[nodiscard]] BooleanExpression SDNF() const;
+    [[nodiscard]] BooleanExpression SKNF() const;
     [[nodiscard]] std::string table() const;
     std::string GetZhegalkin() const;
+    std::string GetSDNF() const;
+    std::string GetSKNF() const;
     explicit operator std::string() const;
 };
 [[nodiscard]] bool isFullSystem(const std::vector<BooleanExpression>&);

@@ -266,6 +266,8 @@ void BooleanExpression::InfixFilter(const char* instr, char* outstr)
     {
         while ((ch = instr[i++]) != '\0')
         {
+            if (buf.empty() && (ch >= '2' && ch <= '9')) throw ErrorInvalidConstant(buf.c_str(),k);
+            if (!buf.empty() && buf[0] == 'x' && buf.size() > 1 && (ch >= '0' && ch <= '9')) throw ErrorOverabundanceOfIndexing(buf.c_str(), k);
             if (!buf.empty() && buf[0] == 'x' && buf.size() < 2 && ch == ' ') throw ErrorLackOfIndexing(buf.c_str(), k);
             if (!buf.empty() && ch == 'x') throw ErrorDuplicationOfVariables(instr, k);
             if (ch == ' ' || ch == '\t' || ch == '\r') continue;
@@ -491,6 +493,148 @@ BooleanExpression BooleanExpression::zhegalkin() const
     return BooleanExpression(result.c_str());
 }
 
+BooleanExpression BooleanExpression::SDNF() const
+{
+    std::string table_expressions = table();
+    int varcount = 0;
+    size_t size = table_expressions.size();
+    std::string unique_var;
+    std::string root_string = root->str();
+    std::set<char> set;
+    for (size_t i = 0; i < root_string.size(); i++)
+    {
+        if (root_string[i] >= '0' && root_string[i] <= '9')
+        {
+            set.insert(root_string[i]);
+        }
+    }
+    std::set<char>::iterator it = set.begin();
+    while (it != set.end())
+    {
+        unique_var += *it;
+        it++;
+    }
+    while (size >>= 1)
+    {
+        varcount++;
+    }
+    int combination = 1 << varcount;
+    std::vector<std::string> terms;
+    for (int i = 0; i < combination; i++)
+    {
+        if (table_expressions[i] == '1')
+        {
+            std::string term;
+            for (int j = 0; j < varcount; ++j)
+            {
+                if (j > 0)
+                {
+                    term += '&';
+                }
+                if ((i & (1 << (varcount - 1 - j))))
+                {
+                    term += std::string("x") + unique_var[j];
+                }
+                else
+                {
+                    term += '~' + std::string("x") + unique_var[j];
+                }
+            }
+            terms.push_back(term);
+        }
+    }
+    std::string result1;
+    if (terms.empty())
+    {
+        result1 = "0";
+    }
+    else
+    {
+        for (size_t i = 0; i < terms.size(); i++)
+        {
+            if (i != 0)
+            {
+                result1 += 'v';
+            }
+            result1 += terms[i];
+        }
+    }
+    SD = result1;
+    return BooleanExpression(result1.c_str());
+}
+
+BooleanExpression BooleanExpression::SKNF() const
+{
+    std::string table_expressions = table();
+    int varcount = 0;
+    size_t size = table_expressions.size();
+    std::string unique_var;
+    std::string root_string = root->str();
+    std::set<char> set;
+    for (size_t i = 0; i < root_string.size(); i++)
+    {
+        if (root_string[i] >= '0' && root_string[i] <= '9')
+        {
+            set.insert(root_string[i]);
+        }
+    }
+    std::set<char>::iterator it = set.begin();
+    while (it != set.end())
+    {
+        unique_var += *it;
+        it++;
+    }
+    while (size >>= 1)
+    {
+        varcount++;
+    }
+    int combination = 1 << varcount;
+    std::vector<std::string> terms;
+    for (int i = 0; i < combination; i++)
+    {
+        if (table_expressions[i] == '0')
+        {
+            std::string term;
+            for (int j = 0; j < varcount; ++j)
+            {
+                if (j > 0)
+                {
+                    term += 'v';
+                }
+                if ((i & (1 << (varcount - 1 - j))))
+                {
+                    term += '~' + std::string("x") + unique_var[j];
+                }
+                else
+                {
+                    term += std::string("x") + unique_var[j];
+                }
+            }
+            terms.push_back(term);
+        }
+    }
+    std::string result1;
+    if (terms.empty())
+    {
+        result1 = "0";
+    }
+    else
+    {
+        for (size_t i = 0; i < terms.size(); i++)
+        {
+            if (i != 0)
+            {
+                result1 += '&';
+            }
+            result1 += '(' + terms[i] + ')';
+        }
+    }
+    SK = result1;
+    return BooleanExpression(result1.c_str());
+}
+
+
+
 std::string BooleanExpression::table() const
 {
     if (!root)
@@ -574,6 +718,24 @@ std::string BooleanExpression::GetZhegalkin() const
         BooleanExpression q = zhegalkin();
     }
     return zh;
+}
+
+std::string BooleanExpression::GetSDNF() const
+{
+    if (SD.empty())
+    {
+        BooleanExpression q = SDNF();
+    }
+    return SD;
+}
+
+std::string BooleanExpression::GetSKNF() const
+{
+    if (SK.empty())
+    {
+        BooleanExpression q = SKNF();
+    }
+    return SK;
 }
 
 
