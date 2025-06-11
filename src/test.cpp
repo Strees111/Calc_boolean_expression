@@ -369,107 +369,91 @@ TEST(zhegalkinTest, Hard_10) {
 }
 
 TEST(FullSystemTest, Hard_1) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("x1 v x3"),BooleanExpression("~x4")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_2) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("~x3")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_3) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("x1 v x3")};
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 TEST(FullSystemTest, Hard_4) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 + (x2 + x3)"),BooleanExpression("(x1 + x2) + 1")};
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 TEST(FullSystemTest, Hard_5) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("~x1 & x3 v (x1&~x3)"),BooleanExpression("x1 < x2")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_6) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 + x2 + x3"),BooleanExpression("x1 v x2"),BooleanExpression("0"),BooleanExpression("1")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_7) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("0"),BooleanExpression("1"),BooleanExpression("x1 + x2 + x3")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_8) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 | x2")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_9) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 ^ x2")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_10) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("(x2 v x3)"),BooleanExpression("x4")};
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 TEST(FullSystemTest, Hard_11) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("~x1"),BooleanExpression("x2 > x1")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_12) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("~x1"),BooleanExpression("x1=x2")};
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 TEST(FullSystemTest, Hard_13) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 > ~x2"),BooleanExpression("~x1 & x2")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 
 TEST(FullSystemTest, Hard_14) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{BooleanExpression("x1 > x2"),BooleanExpression("x1 + x2"),BooleanExpression("x1 v x2")};
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
 // Тесты для проверки полноты системы Linear
 TEST(FullSystemTest, Linear) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{
         BooleanExpression("x1 + x2"), // Линейная функция
         BooleanExpression("0"),       // Константа 0
         BooleanExpression("1")        // Константа 1
     };
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 // Тесты для проверки полноты системы Monotonous
 TEST(FullSystemTest, Monotonous) {
-    BooleanExpression expression{};
     std::vector<BooleanExpression> expressions{
         BooleanExpression("x1 & x2"), // Монотонная функция
         BooleanExpression("x1 v x2") // Монотонная функция
     };
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 // Тесты для проверки полноты системы SelfDual
@@ -479,7 +463,7 @@ TEST(FullSystemTest, SelfDual) {
         BooleanExpression("x1 + ~x2"), // Самодвойственная функция
         BooleanExpression("x1 = ~x2") // Самодвойственная функция
     };
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 // Тесты для проверки полноты системы SaveOne
@@ -489,7 +473,7 @@ TEST(FullSystemTest, SaveOne) {
         BooleanExpression("x1 & x2"), // Сохраняющая 1 функция
         BooleanExpression("x1 v x2") // Сохраняющая 1 функция
     };
-    EXPECT_EQ(expression.isFullSystem(expressions), false);
+    EXPECT_EQ(isFullSystem(expressions), false);
 }
 
 // Тесты для проверки полноты системы SaveZero
@@ -499,5 +483,5 @@ TEST(FullSystemTest, SaveZero) {
         BooleanExpression("x1 | x2"), // Сохраняющая 0 функция
         BooleanExpression("x1 & x2") // Сохраняющая 0 функция
     };
-    EXPECT_EQ(expression.isFullSystem(expressions), true);
+    EXPECT_EQ(isFullSystem(expressions), true);
 }
