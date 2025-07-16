@@ -7,9 +7,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+namespace py = pybind11;
+
 namespace global
 {
-    std::unordered_map<int, std::vector<BooleanExpression>> s;
+    std::unordered_map<int, std::vector<BooleanExpression>> users;
 }
 
 void add_expression(int id, const std::string& line)
@@ -17,7 +19,7 @@ void add_expression(int id, const std::string& line)
     try
     {
         BooleanExpression a(line.c_str());
-        global::s[id].push_back(a);
+        global::users[id].push_back(a);
     }
     catch (const Error& e)
     {
@@ -27,27 +29,27 @@ void add_expression(int id, const std::string& line)
 
 std::string delete_expression(int id, int index)
 {
-    if (global::s[id].size() <= index || index < 0) throw std::invalid_argument("Invalid expression index");
-    std::string result = std::string(global::s[id][index]);
-    global::s[id].erase(global::s[id].begin() + index);
+    if (global::users[id].size() <= index || index < 0) throw std::invalid_argument("Invalid expression index");
+    std::string result = std::string(global::users[id][index]);
+    global::users[id].erase(global::users[id].begin() + index);
     return result;
 }
 
 void clear_expressions(int id)
 {
-    global::s[id].clear();
+    global::users[id].clear();
 }
 
 bool empty_expressions(int id)
 {
-    return global::s[id].empty();
+    return global::users[id].empty();
 }
 
 std::string print_expressions(int id)
 {
     std::ostringstream output;
     int i = 1;
-    for (auto const& expr : global::s[id])
+    for (auto const& expr : global::users[id])
     {
         output << i << ". " << std::string(expr) << std::endl;
         ++i;
@@ -57,7 +59,7 @@ std::string print_expressions(int id)
 std::string get_expression(int id, int index)
 {
     std::ostringstream output;
-    output << std::string(global::s[id][index]) << std::flush;
+    output << std::string(global::users[id][index]) << std::flush;
     return output.str();
 }
 
@@ -66,48 +68,62 @@ std::string process_expression(const std::string& mode, int id)
     std::ostringstream output;
     if (mode == "-isfull")
     {
-        output << (isFullSystem(global::s[id]) ? "yes" : "no");
+        output << isFullSystem(global::users[id]) << std::endl;
     }
     else if (mode == "-zh")
     {
-        for (auto& expr : global::s[id])
+        for (auto& expr : global::users[id])
         {
             output << expr.GetZhegalkin() << std::endl;
         }
     }
     else if (mode == "-table")
     {
-        for (auto& expr : global::s[id])
+        for (auto& expr : global::users[id])
         {
             output << expr.table() << std::endl;
         }
     }
     else if (mode == "-sdnf")
     {
-        for (auto& expr : global::s[id])
+        for (auto& expr : global::users[id])
         {
             output << expr.GetSDNF() << std::endl;
         }
     }
     else if (mode == "-sknf")
     {
-        for (auto& expr : global::s[id])
+        for (auto& expr : global::users[id])
         {
             output << expr.GetSKNF() << std::endl;
         }
     }
     else if (mode == "-FullTable")
     {
-        for (auto& expr : global::s[id])
+        for (auto& expr : global::users[id])
         {
             output << expr.GetTable() << '=' << std::endl;
+        }
+    }
+    else if (mode == "-MinimizeDNF")
+    {
+        for (auto& expr : global::users[id])
+        {
+                output << expr.GetMinimizedDNF() << std::endl;
+        }
+    }
+    else if (mode == "-MinimizeCNF")
+    {
+        for (auto& expr : global::users[id])
+        {
+                output << expr.GetMinimizedCNF() << std::endl;
         }
     }
     return output.str();
 }
 
 int get_user_count() {
-    return global::s.size();
+    return global::users.size();
 }
 
 PYBIND11_MODULE(boolcalc, m)

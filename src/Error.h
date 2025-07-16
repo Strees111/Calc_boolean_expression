@@ -122,3 +122,14 @@ public:
         return std::string("Invalid Constant ") + str;
     }
 };
+class ErrorManyVar : public Error
+{
+    std::string str;
+    int count;
+public:
+    ErrorManyVar(const char *s, int count_1): str(s), count(count_1) {}
+    std::string what() const
+    {
+        return "Выражение " + str + " содержит " + std::to_string(count) + " переменных. Минимизация ограничена 4 переменными.";
+    }
+};

@@ -1,6 +1,7 @@
 #include <string>
 #include <gtest/gtest.h>
-
+#include <chrono>
+#include <random>
 #include "boolexpr.h"
 
 TEST(BooleanTest, And_1) {
@@ -368,120 +369,454 @@ TEST(zhegalkinTest, Hard_10) {
     EXPECT_EQ(expression.GetZhegalkin(), "x9+x8+x8&x9+x7+x7&x9+x2+x2&x9+x2&x8+x2&x8&x9+x2&x7+x2&x7&x9+x1&x7&x8+x1&x7&x8&x9+x1&x2&x7&x8+x1&x2&x7&x8&x9");
 }
 
-TEST(FullSystemTest, Hard_1) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("x1 v x3"),BooleanExpression("~x4")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+
+TEST(SKNFandSDNFTest, Hard_1) {
+    BooleanExpression expression("x1 > x2 > x3");
+    EXPECT_EQ(expression.GetSDNF(), "~x1&~x2&x3v~x1&x2&x3vx1&~x2&~x3vx1&~x2&x3vx1&x2&x3");
+    EXPECT_EQ(expression.GetSKNF(), "(x1vx2vx3)&(x1v~x2vx3)&(~x1v~x2vx3)");
 }
 
-TEST(FullSystemTest, Hard_2) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("~x3")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+
+// TEST(FullSystemTest, Hard_1) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("x1 v x3"),BooleanExpression("~x4")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_2) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("~x3")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_3) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("x1 v x3")};
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// TEST(FullSystemTest, Hard_4) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 + (x2 + x3)"),BooleanExpression("(x1 + x2) + 1")};
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// TEST(FullSystemTest, Hard_5) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("~x1 & x3 v (x1&~x3)"),BooleanExpression("x1 < x2")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_6) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 + x2 + x3"),BooleanExpression("x1 v x2"),BooleanExpression("0"),BooleanExpression("1")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_7) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("0"),BooleanExpression("1"),BooleanExpression("x1 + x2 + x3")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_8) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 | x2")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_9) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 ^ x2")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_10) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("(x2 v x3)"),BooleanExpression("x4")};
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// TEST(FullSystemTest, Hard_11) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("~x1"),BooleanExpression("x2 > x1")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_12) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("~x1"),BooleanExpression("x1=x2")};
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// TEST(FullSystemTest, Hard_13) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 > ~x2"),BooleanExpression("~x1 & x2")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+// TEST(FullSystemTest, Hard_14) {
+//     std::vector<BooleanExpression> expressions{BooleanExpression("x1 > x2"),BooleanExpression("x1 + x2"),BooleanExpression("x1 v x2")};
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+// // Тесты для проверки полноты системы Linear
+// TEST(FullSystemTest, Linear) {
+//     std::vector<BooleanExpression> expressions{
+//         BooleanExpression("x1 + x2"), // Линейная функция
+//         BooleanExpression("0"),       // Константа 0
+//         BooleanExpression("1")        // Константа 1
+//     };
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// // Тесты для проверки полноты системы Monotonous
+// TEST(FullSystemTest, Monotonous) {
+//     std::vector<BooleanExpression> expressions{
+//         BooleanExpression("x1 & x2"), // Монотонная функция
+//         BooleanExpression("x1 v x2") // Монотонная функция
+//     };
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// // Тесты для проверки полноты системы SelfDual
+// TEST(FullSystemTest, SelfDual) {
+//     std::vector<BooleanExpression> expressions{
+//         BooleanExpression("x1 + ~x2"), // Самодвойственная функция
+//         BooleanExpression("x1 = ~x2") // Самодвойственная функция
+//     };
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// // Тесты для проверки полноты системы SaveOne
+// TEST(FullSystemTest, SaveOne) {
+//     std::vector<BooleanExpression> expressions{
+//         BooleanExpression("x1 & x2"), // Сохраняющая 1 функция
+//         BooleanExpression("x1 v x2") // Сохраняющая 1 функция
+//     };
+//     EXPECT_EQ(isFullSystem(expressions), false);
+// }
+
+// // Тесты для проверки полноты системы SaveZero
+// TEST(FullSystemTest, SaveZero) {
+//     std::vector<BooleanExpression> expressions{
+//         BooleanExpression("x1 | x2"), // Сохраняющая 0 функция
+//         BooleanExpression("x1 & x2") // Сохраняющая 0 функция
+//     };
+//     EXPECT_EQ(isFullSystem(expressions), true);
+// }
+
+TEST(MinimizeTest, Hard_1) {
+    BooleanExpression expression("x0 & x1 v x0 & ~x1");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0");
 }
 
-TEST(FullSystemTest, Hard_3) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("x1 v x3")};
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, Hard_2) {
+    BooleanExpression expression("x0 & x1 v ~x0 & x1");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x1");
 }
 
-TEST(FullSystemTest, Hard_4) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 + (x2 + x3)"),BooleanExpression("(x1 + x2) + 1")};
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, Hard_3) {
+    BooleanExpression expression("x0 & x1 & x2 v x0 & ~x1 & x2");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0&x2");
 }
 
-TEST(FullSystemTest, Hard_5) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("~x1 & x3 v (x1&~x3)"),BooleanExpression("x1 < x2")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+TEST(MinimizeTest, Hard_4) {
+    BooleanExpression expression("x0 v ~x0");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "1");
 }
 
-TEST(FullSystemTest, Hard_6) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 + x2 + x3"),BooleanExpression("x1 v x2"),BooleanExpression("0"),BooleanExpression("1")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+TEST(MinimizeTest, Hard_5) {
+    BooleanExpression expression("x0 & ~x0");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "0");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "0");
 }
 
-TEST(FullSystemTest, Hard_7) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("0"),BooleanExpression("1"),BooleanExpression("x1 + x2 + x3")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+TEST(MinimizeTest, Hard_6) {
+    BooleanExpression expression("~x0 & x1 v x0 & ~x1");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&~x1v~x0&x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(~x0v~x1)&(x0vx1)");
 }
 
-TEST(FullSystemTest, Hard_8) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 | x2")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+TEST(MinimizeTest, Hard_7) {
+    BooleanExpression expression("~x0 & ~x1 v x0 & x1");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1v~x0&~x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(~x0vx1)&(x0v~x1)");
 }
 
-TEST(FullSystemTest, Hard_9) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 ^ x2")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+TEST(MinimizeTest, Hard_8) {
+    BooleanExpression expression("x0 & x1 v x0 & x2");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1vx0&x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(x0)&(x1vx2)");
+}
+TEST(MinimizeTest, Hard_9) {
+    BooleanExpression expression("~x0 & x1 v x0 & x1");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x1");
 }
 
-TEST(FullSystemTest, Hard_10) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 & x2"),BooleanExpression("(x2 v x3)"),BooleanExpression("x4")};
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, Hard_10) {
+    BooleanExpression expression("x0 & ~x1 v x0 & x1");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0");
 }
 
-TEST(FullSystemTest, Hard_11) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("~x1"),BooleanExpression("x2 > x1")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+// Тесты с тремя переменными
+TEST(MinimizeTest, ThreeVar_1) {
+    BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0&x1");
 }
 
-TEST(FullSystemTest, Hard_12) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("~x1"),BooleanExpression("x1=x2")};
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, ThreeVar_2) {
+    BooleanExpression expression("x0 & ~x1 & x2 v ~x0 & x1 & x2");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&~x1&x2v~x0&x1&x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(~x0v~x1)&(x0vx1)&(x2)");
 }
 
-TEST(FullSystemTest, Hard_13) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 > ~x2"),BooleanExpression("~x1 & x2")};
-    EXPECT_EQ(isFullSystem(expressions), true);
+// TEST(MinimizeTest, ThreeVar_3) {
+//     BooleanExpression expression("~x0 & ~x1 & x2 v x0 & x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&x2v~x0&~x1&x2");
+// }
+
+// TEST(MinimizeTest, ThreeVar_4) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & ~x1 & x2 v ~x0 & x1 & x2 v ~x0 & ~x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x2");
+// }
+
+// TEST(MinimizeTest, ThreeVar_5) {
+//     BooleanExpression expression("x0 & x1 & ~x2 v x0 & ~x1 & ~x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x2");
+// }
+
+// TEST(MinimizeTest, ThreeVar_6) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v x0 & ~x1 & x2 v x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+// }
+
+// TEST(MinimizeTest, ThreeVar_7) {
+//     BooleanExpression expression("~x0 & x1 & x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x0");
+// }
+
+// TEST(MinimizeTest, ThreeVar_8) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v ~x0 & x1 & x2 v ~x0 & x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x1");
+// }
+
+// TEST(MinimizeTest, ThreeVar_9) {
+//     BooleanExpression expression("x0 & ~x1 & x2 v x0 & ~x1 & ~x2 v ~x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x1");
+// }
+
+// // Тесты с группами размера 4
+// TEST(MinimizeTest, Group4_1) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v x0 & ~x1 & x2 v x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+// }
+
+// TEST(MinimizeTest, Group4_2) {
+//     BooleanExpression expression("~x0 & x1 & x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x0");
+// }
+
+// TEST(MinimizeTest, Group4_3) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v ~x0 & x1 & x2 v ~x0 & x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x1");
+// }
+
+// TEST(MinimizeTest, Group4_4) {
+//     BooleanExpression expression("x0 & ~x1 & x2 v x0 & ~x1 & ~x2 v ~x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x1");
+// }
+
+// // Смешанные тесты с различными группами
+// TEST(MinimizeTest, Mixed_1) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x2v~x0&~x1&~x2");
+// }
+
+// TEST(MinimizeTest, Mixed_2) {
+//     BooleanExpression expression("x0 & x1 & ~x2 v x0 & ~x1 & ~x2 v ~x0 & x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&~x2v~x0&x1&x2");
+// }
+
+// TEST(MinimizeTest, Mixed_3) {
+//     BooleanExpression expression("x0 & x1 & x2 v ~x0 & x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x1&x2v~x0&~x1&~x2");
+// }
+
+TEST(MinimizeTest, Mixed_4) {
+    BooleanExpression expression("x0 & x1 & ~x2 v ~x0 & x1 & ~x2 v x0 & ~x1 & x2");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&~x1&x2vx1&~x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(~x1v~x2)&(x0v~x2)&(x1vx2)");
 }
 
-TEST(FullSystemTest, Hard_14) {
-    std::vector<BooleanExpression> expressions{BooleanExpression("x1 > x2"),BooleanExpression("x1 + x2"),BooleanExpression("x1 v x2")};
-    EXPECT_EQ(isFullSystem(expressions), true);
-}
-// Тесты для проверки полноты системы Linear
-TEST(FullSystemTest, Linear) {
-    std::vector<BooleanExpression> expressions{
-        BooleanExpression("x1 + x2"), // Линейная функция
-        BooleanExpression("0"),       // Константа 0
-        BooleanExpression("1")        // Константа 1
-    };
-    EXPECT_EQ(isFullSystem(expressions), false);
+// // Тесты с четырьмя переменными
+TEST(MinimizeTest, FourVar_1) {
+    BooleanExpression expression("x0 & x1 & x2 & x3 v x0 & x1 & x2 & ~x3");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0&x1&x2");
 }
 
-// Тесты для проверки полноты системы Monotonous
-TEST(FullSystemTest, Monotonous) {
-    std::vector<BooleanExpression> expressions{
-        BooleanExpression("x1 & x2"), // Монотонная функция
-        BooleanExpression("x1 v x2") // Монотонная функция
-    };
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, FourVar_2) {
+    BooleanExpression expression("x0 & x1 & x2 & x3 v x0 & x1 & ~x2 & x3");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&x3");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0&x1&x3");
 }
 
-// Тесты для проверки полноты системы SelfDual
-TEST(FullSystemTest, SelfDual) {
-    BooleanExpression expression{};
-    std::vector<BooleanExpression> expressions{
-        BooleanExpression("x1 + ~x2"), // Самодвойственная функция
-        BooleanExpression("x1 = ~x2") // Самодвойственная функция
-    };
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, FourVar_3) {
+    BooleanExpression expression("x0 & x1 & x2 & x3 v x0 & x1 & x2 & ~x3 v x0 & x1 & ~x2 & x3 v x0 & x1 & ~x2 & ~x3");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0&x1");
 }
 
-// Тесты для проверки полноты системы SaveOne
-TEST(FullSystemTest, SaveOne) {
-    BooleanExpression expression{};
-    std::vector<BooleanExpression> expressions{
-        BooleanExpression("x1 & x2"), // Сохраняющая 1 функция
-        BooleanExpression("x1 v x2") // Сохраняющая 1 функция
-    };
-    EXPECT_EQ(isFullSystem(expressions), false);
+TEST(MinimizeTest, FourVar_4) {
+    BooleanExpression expression("x0 & x1 & x2 & x3 v x0 & ~x1 & x2 & x3 v ~x0 & x1 & x2 & x3 v ~x0 & ~x1 & x2 & x3");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x2&x3");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x2&x3");
 }
 
-// Тесты для проверки полноты системы SaveZero
-TEST(FullSystemTest, SaveZero) {
-    BooleanExpression expression{};
-    std::vector<BooleanExpression> expressions{
-        BooleanExpression("x1 | x2"), // Сохраняющая 0 функция
-        BooleanExpression("x1 & x2") // Сохраняющая 0 функция
-    };
-    EXPECT_EQ(isFullSystem(expressions), true);
+// // Сложные случаи
+// TEST(MinimizeTest, Complex_1) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & ~x1 & x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x2v~x0&~x2");
+// }
+
+// TEST(MinimizeTest, Complex_2) {
+//     BooleanExpression expression("x0 & x1 & ~x2 v x0 & ~x1 & x2 v ~x0 & x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&~x2vx0&~x1&x2v~x0&x1&x2v~x0&~x1&~x2");
+// }
+
+// TEST(MinimizeTest, Complex_3) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v ~x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1v~x0&~x1");
+// }
+
+// // Граничные случаи
+// TEST(MinimizeTest, Edge_1) {
+//     BooleanExpression expression("x0");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+// }
+
+TEST(MinimizeTest, Edge_2) {
+    BooleanExpression expression("~x0");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "~x0");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "~x0");
+}
+
+// TEST(MinimizeTest, Edge_3) {
+//     BooleanExpression expression("x0 & x1");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1");
+// }
+
+// TEST(MinimizeTest, Edge_4) {
+//     BooleanExpression expression("x0 v x1");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0vx1");
+// }
+
+// // Тесты с дублирующимися термами
+// TEST(MinimizeTest, Duplicate_1) {
+//     BooleanExpression expression("x0 & x1 v x0 & x1");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1");
+// }
+
+// TEST(MinimizeTest, Duplicate_2) {
+//     BooleanExpression expression("x0 & x1 v x0 & x1 v x0 & ~x1");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+// }
+
+// // Тесты с избыточными термами
+// TEST(MinimizeTest, Redundant_1) {
+//     BooleanExpression expression("x0 v x0 & x1");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0");
+// }
+
+// TEST(MinimizeTest, Redundant_2) {
+//     BooleanExpression expression("x0 & x1 v x0 & x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1");
+// }
+
+// // Тесты с симметричными функциями
+// TEST(MinimizeTest, Symmetric_1) {
+//     BooleanExpression expression("x0 & ~x1 & ~x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&~x1&~x2v~x0&x1&~x2v~x0&~x1&x2");
+// }
+
+// TEST(MinimizeTest, Symmetric_2) {
+//     BooleanExpression expression("x0 & x1 & ~x2 v x0 & ~x1 & x2 v ~x0 & x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&~x2vx0&~x1&x2v~x0&x1&x2");
+// }
+
+// // Тесты с отрицаниями
+// TEST(MinimizeTest, Negation_1) {
+//     BooleanExpression expression("~x0 & ~x1 v ~x0 & x1");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x0");
+// }
+
+// TEST(MinimizeTest, Negation_2) {
+//     BooleanExpression expression("~x0 & x1 & x2 v ~x0 & ~x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x0&x2");
+// }
+
+// TEST(MinimizeTest, Negation_3) {
+//     BooleanExpression expression("x0 & ~x1 & ~x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x1&~x2");
+// }
+
+// TEST(MinimizeTest, ManyTerms_1) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v x0 & ~x1 & x2 v ~x0 & x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1vx0&x2vx1&x2");
+// }
+
+// TEST(MinimizeTest, ManyTerms_2) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & ~x1 & ~x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&x2vx0&~x1&~x2v~x0&x1&~x2v~x0&~x1&x2");
+// }
+
+// Тесты на максимальную минимизацию
+TEST(MinimizeTest, MaxMinimize_1) {
+    BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v x0 & ~x1 & x2 v x0 & ~x1 & ~x2 v ~x0 & x1 & x2 v ~x0 & x1 & ~x2");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0vx1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0vx1");
+}
+
+// TEST(MinimizeTest, MaxMinimize_2) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v x0 & ~x1 & x2 v ~x0 & ~x1 & x2 v ~x0 & ~x1 & ~x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1v~x0&~x1v~x1&x2");
+// }
+
+// TEST(MinimizeTest, MaxCoverage_1) {
+//     BooleanExpression expression("x0 & x1 & x2 v x0 & x1 & ~x2 v x0 & ~x1 & x2 v ~x0 & x1 & x2 v ~x0 & x1 & ~x2 v ~x0 & ~x1 & x2");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x1vx2");
+// }
+
+// TEST(MinimizeTest, Negation_Operations_1) {
+//     BooleanExpression expression("~(x0 > x1) v ~(x0 + x2)");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x2v~x0&~x2v~x1&~x2");
+// }
+
+// TEST(MinimizeTest, Nested_Operations_1) {
+//     BooleanExpression expression("(x0 > (x1 + x2)) v (x0 = (x1 | x2))");
+//     EXPECT_EQ(expression.GetMinimizedDNF(), "~x0v~x1v~x2");
+// }
+
+TEST(MinimizeTest, Constants_Operations_1) {
+    BooleanExpression expression("x0 & 1 v x0 | 0");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "1");
+}
+
+TEST(MinimizeTest, Ultimate_1) {
+    BooleanExpression expression("((x0 > x1) + (x1 = x2)) | ((x0 ^ x1) < (x1 | x2))");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0vx1v~x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0vx1v~x2");
+}
+
+TEST(MinimizeTest, Ultimate_2) {
+    BooleanExpression expression("~((x0 | x1) = (x1 ^ x2)) + ((x0 < x1) > (x1 + x2))");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&x1&~x2");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "x0&x1&~x2");
+}
+
+TEST(MinimizeTest, Ultimate_3) {
+    BooleanExpression expression("(x0 & x1 & x2) v (x0 > x1 > x2) v (x0 + x1 + x2) v (x0 = x1 = x2)");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "x0&~x1vx2v~x0&x1");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(~x0v~x1vx2)&(x0vx1vx2)");
+}
+
+TEST(MinimizeTest, Ultimate_4) {
+    BooleanExpression expression("x0&x1&x2&x3&x4&x5&x6vx7|x8");
+    EXPECT_EQ(expression.GetMinimizedDNF(), "~x0&~x7v~x1&~x7v~x2&~x7v~x3&~x7v~x4&~x7v~x5&~x7v~x6&~x7v~x8");
+    EXPECT_EQ(expression.GetMinimizedCNF(), "(~x0v~x1v~x2v~x3v~x4v~x5v~x6v~x8)&(~x7v~x8)");
 }

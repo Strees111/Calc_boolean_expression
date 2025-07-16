@@ -1,14 +1,6 @@
 #include "boolexpr.h"
 #include "Error.h"
 
-#include <memory>
-#include <set>
-#include <stack>
-#include <sstream>
-#include <iomanip>
-#include <functional>
-#include <cstring>
-
 BooleanExpressionNode* BooleanExpression::Postfix2Tree(const char* str)
 {
     int index = 0;
@@ -366,7 +358,7 @@ BooleanExpression::BooleanExpression(const char* str): root(nullptr)
     }
 }
 
-BooleanExpression::BooleanExpression(const BooleanExpression& a): root(nullptr), zh(a.zh)
+BooleanExpression::BooleanExpression(const BooleanExpression& a): root(nullptr), ZH(a.ZH)
 {
     if (a.root)
     {
@@ -374,7 +366,7 @@ BooleanExpression::BooleanExpression(const BooleanExpression& a): root(nullptr),
     }
 }
 
-BooleanExpression::BooleanExpression(BooleanExpression&& a) noexcept: root(a.root), zh(std::move(a.zh))
+BooleanExpression::BooleanExpression(BooleanExpression&& a) noexcept: root(a.root), ZH(std::move(a.ZH))
 {
     a.root = nullptr;
 }
@@ -385,7 +377,7 @@ BooleanExpression& BooleanExpression::operator=(const BooleanExpression& a)
     {
         BooleanExpression tmp(a);
         std::swap(root, tmp.root);
-        std::swap(zh, tmp.zh);
+        std::swap(ZH, tmp.ZH);
     }
     return *this;
 }
@@ -396,7 +388,7 @@ BooleanExpression& BooleanExpression::operator=(BooleanExpression&& a) noexcept
     {
         delete root;
         root = a.root;
-        zh = std::move(a.zh);
+        ZH = std::move(a.ZH);
         a.root = nullptr;
     }
     return *this;
@@ -489,7 +481,7 @@ BooleanExpression BooleanExpression::zhegalkin() const
             result += terms[i];
         }
     }
-    zh = result;
+    ZH = result;
     return BooleanExpression(result.c_str());
 }
 
@@ -633,6 +625,498 @@ BooleanExpression BooleanExpression::SKNF() const
     return BooleanExpression(result1.c_str());
 }
 
+BooleanExpression BooleanExpression::Minimized() const
+{
+    std::string table_expressions = table();
+    std::string root_string = root->str();
+    size_t size = table_expressions.size();
+
+    int varcount = 0;
+    std::string unique_var;
+    std::set<char> set;
+
+    for (size_t i = 0; i < root_string.size(); i++)
+    {
+        if (root_string[i] >= '0' && root_string[i] <= '9')
+        {
+            set.insert(root_string[i]);
+        }
+    }
+    for (const auto& elem : set) {
+        unique_var += elem;
+    }
+
+    while (size >>= 1)
+    {
+        varcount++;
+    }
+    int combination = 1 << varcount;
+    std::vector<std::string> binary_codes;
+    std::vector<char> truth_table;
+    
+    for (int i = 0; i < combination; i++)
+    {
+        std::string binary_str(varcount, '0');
+        for (int j = 0; j < varcount; j++)
+        {
+            if (i & (1 << (varcount - 1 - j)))
+            {
+                binary_str[j] = '1';
+            }
+        }
+        
+        binary_codes.push_back(binary_str);
+        truth_table.push_back(table_expressions[i]);
+    }
+
+    std::string result = minimizeEspresso(truth_table, binary_codes, varcount, unique_var);
+    MDN = result;
+    return BooleanExpression(result.c_str());
+}
+
+std::vector<BooleanExpression::Cube> BooleanExpression::generateInitialCubes(const std::vector<int>& minterms, int varcount) const
+{
+    std::vector<Cube> cubes;
+    
+    for (int minterm : minterms) {
+        Cube cube(varcount);
+        for (int i = 0; i < varcount; i++) {
+            if (minterm & (1 << (varcount - 1 - i))) {
+                cube.literals[i] = 1;
+            } else {
+                cube.literals[i] = 0;
+            }
+        }
+        
+        cube.minterms.insert(minterm);
+        cubes.push_back(cube);
+    }
+    
+    return cubes;
+}
+
+std::vector<BooleanExpression::Cube> BooleanExpression::expand( const std::vector<Cube>& cubes, const std::vector<int>& minterms, const std::vector<int>& dont_cares, int varcount) const
+{
+    std::vector<Cube> expanded_cubes;
+    
+    for (const auto& cube : cubes) {
+        Cube expanded = cube;
+
+        for (int var = 0; var < varcount; var++) {
+            if (expanded.literals[var] != 2) {
+                if (canExpand(expanded, var, 2, minterms, dont_cares)) {
+                    expanded.literals[var] = 2;
+                    expanded.minterms = getCoveredMinterms(expanded, varcount);
+                }
+            }
+        }
+        
+        expanded_cubes.push_back(expanded);
+    }
+    
+    return expanded_cubes;
+}
+
+bool BooleanExpression::canExpand(const Cube& cube, int variable, int value, const std::vector<int>& minterms, const std::vector<int>& dont_cares) const
+{
+    Cube test_cube = cube;
+    test_cube.literals[variable] = value;
+
+    std::set<int> covered = getCoveredMinterms(test_cube, cube.literals.size());
+    
+    for (int covered_minterm : covered) {
+        bool is_valid = false;
+
+        for (int m : minterms) {
+            if (m == covered_minterm) {
+                is_valid = true;
+                break;
+            }
+        }
+        
+        if (!is_valid) {
+            for (int dc : dont_cares) {
+                if (dc == covered_minterm) {
+                    is_valid = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!is_valid) return false;
+    }
+    
+    return true;
+}
+std::string BooleanExpression::minimizeEspresso(std::vector<char> truth_table, std::vector<std::string> binary_codes, int varcount, std::string unique_var) const
+{
+    std::vector<int> minterms;
+    std::vector<int> dont_cares;
+    for (size_t i = 0; i < truth_table.size(); i++) {
+        if (truth_table[i] == '1') {
+            minterms.push_back(static_cast<int>(i));
+        }
+    }
+    
+    if (minterms.empty()) return "0";
+    if (minterms.size() == truth_table.size()) return "1";
+
+    std::vector<Cube> cubes = generateInitialCubes(minterms, varcount);
+
+    std::vector<Cube> prev_cubes;
+    int iteration = 0;
+    
+    do {
+        prev_cubes = cubes;
+        iteration++;
+
+        cubes = expand(cubes, minterms, dont_cares, varcount);
+
+        cubes = irredundant(cubes, minterms);
+
+        cubes = reduce(cubes);
+        
+    } while (cubes != prev_cubes && iteration < 10);
+
+    if (cubes.empty()) return "0";
+    
+    std::vector<std::string> terms;
+    for (const auto& cube : cubes) {
+        std::string term = cubeToString(cube, unique_var);
+        if (!term.empty()) {
+            terms.push_back(term);
+        }
+    }
+    
+    if (terms.empty()) return "0";
+
+    std::sort(terms.begin(), terms.end());
+    
+    std::string result;
+    for (size_t i = 0; i < terms.size(); i++) {
+        if (i > 0) result += "v";
+        result += terms[i];
+    }
+    return result;
+}
+std::set<int> BooleanExpression::getCoveredMinterms(const Cube& cube, int varcount) const
+{
+    std::set<int> covered;
+    int dont_care_count = 0;
+    std::vector<int> dont_care_positions;
+    
+    for (int i = 0; i < varcount; i++) {
+        if (cube.literals[i] == 2) {
+            dont_care_count++;
+            dont_care_positions.push_back(i);
+        }
+    }
+    int combinations = 1 << dont_care_count;
+    
+    for (int combo = 0; combo < combinations; combo++) {
+        int minterm = 0;
+        
+        for (int i = 0; i < varcount; i++) {
+            if (cube.literals[i] == 1) {
+                minterm |= (1 << (varcount - 1 - i));
+            } else if (cube.literals[i] == 2) {
+                int dc_pos = 0;
+                for (int pos : dont_care_positions) {
+                    if (pos == i) break;
+                    dc_pos++;
+                }
+                
+                if (combo & (1 << dc_pos)) {
+                    minterm |= (1 << (varcount - 1 - i));
+                }
+            }
+        }
+        
+        covered.insert(minterm);
+    }
+    
+    return covered;
+}
+
+std::vector<BooleanExpression::Cube> BooleanExpression::irredundant(
+    const std::vector<Cube>& cubes, const std::vector<int>& minterms) const
+{
+    std::vector<Cube> essential_cubes;
+    std::set<int> covered_minterms;
+    for (const auto& cube : cubes) {
+        bool is_essential = false;
+        
+        for (int minterm : cube.minterms) {
+            int cover_count = 0;
+            for (const auto& other_cube : cubes) {
+                if (other_cube.minterms.count(minterm)) {
+                    cover_count++;
+                }
+            }
+            
+            if (cover_count == 1) {
+                is_essential = true;
+                break;
+            }
+        }
+        
+        if (is_essential) {
+            essential_cubes.push_back(cube);
+            for (int m : cube.minterms) {
+                covered_minterms.insert(m);
+            }
+        }
+    }
+    std::vector<Cube> remaining_cubes;
+    for (const auto& cube : cubes) {
+        bool is_essential = false;
+        for (const auto& ess : essential_cubes) {
+            if (&cube == &ess) {
+                is_essential = true;
+                break;
+            }
+        }
+        if (!is_essential) {
+            remaining_cubes.push_back(cube);
+        }
+    }
+    
+    while (covered_minterms.size() < minterms.size()) {
+        int best_cube_idx = -1;
+        int max_new_coverage = 0;
+        
+        for (size_t i = 0; i < remaining_cubes.size(); i++) {
+            int new_coverage = 0;
+            for (int m : remaining_cubes[i].minterms) {
+                if (covered_minterms.find(m) == covered_minterms.end()) {
+                    new_coverage++;
+                }
+            }
+            
+            if (new_coverage > max_new_coverage) {
+                max_new_coverage = new_coverage;
+                best_cube_idx = i;
+            }
+        }
+        
+        if (best_cube_idx == -1) break;
+        
+        essential_cubes.push_back(remaining_cubes[best_cube_idx]);
+        for (int m : remaining_cubes[best_cube_idx].minterms) {
+            covered_minterms.insert(m);
+        }
+        remaining_cubes.erase(remaining_cubes.begin() + best_cube_idx);
+    }
+    
+    return essential_cubes;
+}
+
+std::vector<BooleanExpression::Cube> BooleanExpression::reduce(
+    const std::vector<Cube>& cubes) const
+{
+    std::vector<Cube> reduced_cubes;
+    
+    for (const auto& cube : cubes) {
+        Cube reduced = cube;
+
+        for (size_t i = 0; i < reduced.literals.size(); i++) {
+            if (reduced.literals[i] != 2) {
+                int original = reduced.literals[i];
+                reduced.literals[i] = 2;
+
+                bool is_valid = true;
+
+                reduced.literals[i] = original;
+            }
+        }
+        
+        reduced_cubes.push_back(reduced);
+    }
+    
+    return reduced_cubes;
+}
+
+std::string BooleanExpression::cubeToString(const Cube& cube, const std::string& unique_var) const
+{
+    std::string term;
+    
+    for (size_t i = 0; i < cube.literals.size(); i++) {
+        if (cube.literals[i] != 2) { // Не don't care
+            if (!term.empty()) {
+                term += "&";
+            }
+            
+            if (cube.literals[i] == 0) {
+                term += "~";
+            }
+            term += "x" + std::string(1, unique_var[i]);
+        }
+    }
+    
+    return term.empty() ? "1" : term;
+}
+std::string BooleanExpression::minimizeEspressoDual(std::vector<char> truth_table, 
+                                                   std::vector<std::string> binary_codes, 
+                                                   int varcount, std::string unique_var) const
+{
+    std::vector<int> maxterms; 
+    for (size_t i = 0; i < truth_table.size(); i++) {
+        if (truth_table[i] == '0') {
+            maxterms.push_back(static_cast<int>(i));
+        }
+    }
+    
+    if (maxterms.empty()) return "1";
+    if (maxterms.size() == truth_table.size()) return "0";
+
+    
+    std::vector<char> inverted_table = truth_table;
+    for (char& bit : inverted_table) {
+        bit = (bit == '0') ? '1' : '0';
+    }
+    
+    std::string minimized_dnf = minimizeEspresso(inverted_table, binary_codes, varcount, unique_var);
+    
+    if (minimized_dnf == "0") return "1";
+    if (minimized_dnf == "1") return "0"; 
+    std::string result = convertDNFtoCNF(minimized_dnf, unique_var);
+
+    return result;
+}
+std::string BooleanExpression::convertDNFtoCNF(const std::string& dnf, const std::string& unique_var) const
+{
+    if (dnf == "0" || dnf == "1") return dnf;
+
+    std::vector<std::string> dnf_terms;
+    std::string current_term;
+    
+    for (char c : dnf) {
+        if (c == 'v') {
+            if (!current_term.empty()) {
+                dnf_terms.push_back(current_term);
+                current_term.clear();
+            }
+        } else {
+            current_term += c;
+        }
+    }
+    if (!current_term.empty()) {
+        dnf_terms.push_back(current_term);
+    }
+
+    std::vector<std::string> cnf_clauses;
+    
+    for (const std::string& term : dnf_terms) {
+        std::string clause = invertTerm(term);
+        if (!clause.empty()) {
+            cnf_clauses.push_back(clause);
+        }
+    }
+    
+    if (cnf_clauses.empty()) return "1";
+    if (cnf_clauses.size() == 1) return cnf_clauses[0];
+    std::string result;
+    for (size_t i = 0; i < cnf_clauses.size(); i++) {
+        if (i > 0) result += "&";
+        result += "(" + cnf_clauses[i] + ")";
+    }
+    
+    return result;
+}
+
+std::string BooleanExpression::invertTerm(const std::string& term) const
+{
+    std::vector<std::string> literals;
+    std::string current_literal;
+    bool in_negation = false;
+    
+    for (size_t i = 0; i < term.size(); i++) {
+        char c = term[i];
+        
+        if (c == '&') {
+            if (!current_literal.empty()) {
+                literals.push_back(current_literal);
+                current_literal.clear();
+            }
+        } else if (c == '~') {
+            current_literal += c;
+        } else if (c == 'x') {
+            current_literal += c;
+        } else if (c >= '0' && c <= '9') {
+            current_literal += c;
+        }
+    }
+    
+    if (!current_literal.empty()) {
+        literals.push_back(current_literal);
+    }
+    
+    std::vector<std::string> inverted_literals;
+    for (const std::string& lit : literals) {
+        if (lit.substr(0, 1) == "~") {
+            inverted_literals.push_back(lit.substr(1));
+        } else {
+            inverted_literals.push_back("~" + lit);
+        }
+    }
+
+    std::string result;
+    for (size_t i = 0; i < inverted_literals.size(); i++) {
+        if (i > 0) result += "v";
+        result += inverted_literals[i];
+    }
+    
+    return result;
+}
+
+BooleanExpression BooleanExpression::MinimizedCNF() const
+{
+    std::string table_expressions = table();
+    std::string root_string = root->str();
+    size_t size = table_expressions.size();
+
+    int varcount = 0;
+    std::string unique_var;
+    std::set<char> set;
+
+    for (size_t i = 0; i < root_string.size(); i++)
+    {
+        if (root_string[i] >= '0' && root_string[i] <= '9')
+        {
+            set.insert(root_string[i]);
+        }
+    }
+    for (const auto& elem : set) {
+        unique_var += elem;
+    }
+
+    while (size >>= 1)
+    {
+        varcount++;
+    }
+    int combination = 1 << varcount;
+    std::vector<std::string> binary_codes;
+    std::vector<char> truth_table;
+    
+    for (int i = 0; i < combination; i++)
+    {
+        std::string binary_str(varcount, '0');
+        for (int j = 0; j < varcount; j++)
+        {
+            if (i & (1 << (varcount - 1 - j)))
+            {
+                binary_str[j] = '1';
+            }
+        }
+        
+        binary_codes.push_back(binary_str);
+        truth_table.push_back(table_expressions[i]);
+    }
+
+    std::string result = minimizeEspressoDual(truth_table, binary_codes, varcount, unique_var);
+    MCN = result;
+    return BooleanExpression(result.c_str());
+}
 
 
 std::string BooleanExpression::table() const
@@ -713,11 +1197,11 @@ std::string BooleanExpression::table() const
 
 std::string BooleanExpression::GetZhegalkin() const
 {
-    if (zh.empty())
+    if (ZH.empty())
     {
         BooleanExpression q = zhegalkin();
     }
-    return zh;
+    return ZH;
 }
 
 std::string BooleanExpression::GetSDNF() const
@@ -738,6 +1222,32 @@ std::string BooleanExpression::GetSKNF() const
     return SK;
 }
 
+std::string BooleanExpression::GetMinimizedDNF() const
+{
+    if (MDN.empty())
+    {
+        BooleanExpression q = Minimized();
+    }
+    return MDN;
+}
+
+std::string BooleanExpression::GetMinimizedCNF() const
+{
+    if (MCN.empty())
+    {
+        std::string dnf_minimized = GetMinimizedDNF();
+        if (dnf_minimized == "0") {
+            MCN = "0";
+        } else if (dnf_minimized == "1") {
+            MCN = "1";
+        } else if (dnf_minimized.find('v') == std::string::npos) {
+            MCN = dnf_minimized;
+        } else {
+                BooleanExpression q = MinimizedCNF();
+        }
+    }
+    return MCN;
+}
 
 void BooleanExpression::setVars(BooleanExpressionNode* node, bool value[]) const
 {
@@ -809,18 +1319,8 @@ BooleanExpression::operator std::string() const
     return {};
 }
 
-bool isFullSystem(const std::vector<BooleanExpression>& a)
-{
-    std::vector<std::string> terms;
-    for (size_t i = 0; i < a.size(); i++)
-    {
-        terms.push_back(a[i].table());
-    }
+bool isSaveZero(std::vector<std::string> terms){
     bool SaveZero = false;
-    bool SaveOne = false;
-    bool SelfDual = false;
-    bool Monotonous = false;
-    bool Linear = false;
     for (size_t i = 0; i < terms.size(); i++)
     {
         if (terms[i].front() != '0')
@@ -829,6 +1329,11 @@ bool isFullSystem(const std::vector<BooleanExpression>& a)
             break;
         }
     }
+    return SaveZero;
+}
+
+bool isSaveOne(std::vector<std::string> terms){
+    bool SaveOne = false;
     for (size_t i = 0; i < terms.size(); i++)
     {
         if (terms[i].back() != '1')
@@ -837,7 +1342,12 @@ bool isFullSystem(const std::vector<BooleanExpression>& a)
             break;
         }
     }
-    for (size_t i = 0; i < a.size(); i++)
+    return SaveOne;
+}
+
+bool isSaveDual(std::vector<std::string> terms, size_t len){
+    bool SelfDual = false;
+    for (size_t i = 0; i < len; i++)
     {
         bool found = false;
         for (size_t j = 0; j < terms[i].size() / 2; j++)
@@ -854,6 +1364,25 @@ bool isFullSystem(const std::vector<BooleanExpression>& a)
             break;
         }
     }
+    return SelfDual;
+}
+
+bool isLinear(std::vector<std::string> terms, size_t len, const std::vector<BooleanExpression>& a){
+    bool Linear = false;
+    for (size_t i = 0; i < len; i++)
+    {
+        std::string q = std::string(a[i].zhegalkin());
+        if (q.find('&') != std::string::npos)
+        {
+            Linear = true;
+            break;
+        }
+    }
+    return Linear;
+}
+
+bool isMonotonous(std::vector<std::string> terms){
+    bool Monotonous = false;
     for (size_t i = 0; i < terms.size(); i++)
     {
         if (terms[i].size() == 1)
@@ -877,16 +1406,7 @@ bool isFullSystem(const std::vector<BooleanExpression>& a)
             break;
         }
     }
-    for (size_t i = 0; i < a.size(); i++)
-    {
-        std::string q = std::string(a[i].zhegalkin());
-        if (q.find('&') != std::string::npos)
-        {
-            Linear = true;
-            break;
-        }
-    }
-    return SaveOne && SaveZero && SelfDual && Monotonous && Linear;
+    return Monotonous;
 }
 
 bool Monotonic(const std::string& left, const std::string& right)
@@ -908,6 +1428,24 @@ bool Monotonic(const std::string& left, const std::string& right)
     std::string right2 = right.substr(right.size() / 2);
     return Monotonic(left1, right1) && Monotonic(left2, right2);
 }
+
+std::string isFullSystem(const std::vector<BooleanExpression>& a)
+{
+    std::vector<std::string> terms;
+    for (size_t i = 0; i < a.size(); i++)
+    {
+        terms.push_back(a[i].table());
+    }
+    size_t len = a.size();
+    std::string result;
+    isSaveZero(terms) ? result.append("T0: -\n") : result.append("T0: +\n");
+    isSaveOne(terms) ? result.append("T1: -\n") : result.append("T1: +\n");
+    isSaveDual(terms,len) ? result.append("S: -\n") : result.append("S: +\n");
+    isMonotonous(terms) ? result.append("M: -\n") : result.append("M: +\n");
+    isLinear(terms,len,a) ? result.append("L: -\n") : result.append("L: +\n");
+    return result;
+}
+
 
 BooleanExpression::~BooleanExpression()
 {

@@ -1,7 +1,14 @@
 #pragma once
 #include <string>
 #include <vector>
-
+#include <stack>
+#include <set>
+#include <sstream>
+#include <iomanip>
+#include <functional>
+#include <cstring>
+#include <algorithm>
+#include <memory>  
 
 class BooleanExpressionNode
 {
@@ -228,10 +235,83 @@ public:
 class BooleanExpression
 {
 private:
+    struct Cube {
+        std::vector<int> literals;
+        std::set<int> minterms;     
+        
+        Cube(int varcount) : literals(varcount, 2) {}
+        bool operator==(const Cube& other) const {
+            return literals == other.literals && minterms == other.minterms;
+        }
+        bool operator!=(const Cube& other) const {
+            return !(*this == other);
+        }
+        bool covers(const Cube& other) const {
+            for (size_t i = 0; i < literals.size(); i++) {
+                if (literals[i] != 2 && other.literals[i] != 2 && 
+                    literals[i] != other.literals[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        bool intersects(const Cube& other) const {
+            for (size_t i = 0; i < literals.size(); i++) {
+                if (literals[i] != 2 && other.literals[i] != 2 && 
+                    literals[i] != other.literals[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        Cube intersect(const Cube& other) const {
+            Cube result(literals.size());
+            for (size_t i = 0; i < literals.size(); i++) {
+                if (literals[i] == 2) {
+                    result.literals[i] = other.literals[i];
+                } else if (other.literals[i] == 2) {
+                    result.literals[i] = literals[i];
+                } else if (literals[i] == other.literals[i]) {
+                    result.literals[i] = literals[i];
+                } else {
+                    return Cube(0); // Пересечение пустое
+                }
+            }
+            return result;
+        }
+        
+        bool isEmpty() const {
+            return literals.empty();
+        }
+        
+        int literalCount() const {
+            int count = 0;
+            for (int lit : literals) {
+                if (lit != 2) count++;
+            }
+            return count;
+        }
+    };
+    std::string minimizeEspresso(std::vector<char> truth_table, std::vector<std::string> binary_codes, int varcount, std::string unique_var) const;
+    std::vector<Cube> generateInitialCubes(const std::vector<int>& minterms, int varcount) const;
+    std::vector<Cube> expand(const std::vector<Cube>& cubes, const std::vector<int>& minterms, const std::vector<int>& dont_cares, int varcount) const;
+    std::vector<Cube> irredundant(const std::vector<Cube>& cubes, const std::vector<int>& minterms) const;
+    std::vector<Cube> reduce(const std::vector<Cube>& cubes) const;
+    bool canExpand(const Cube& cube, int variable, int value, const std::vector<int>& minterms, const std::vector<int>& dont_cares) const;
+    std::set<int> getCoveredMinterms(const Cube& cube, int varcount) const;
+    std::string cubeToString(const Cube& cube, const std::string& unique_var) const;
+    std::string minimizeEspressoDual(std::vector<char> truth_table, std::vector<std::string> binary_codes, int varcount, std::string unique_var) const;
+    std::string convertDNFtoCNF(const std::string& dnf, const std::string& unique_var) const;
+    std::string invertTerm(const std::string& term) const;
+
     BooleanExpressionNode* root{};
-    mutable std::string zh;
+    mutable std::string ZH;
     mutable std::string SD;
     mutable std::string SK;
+    mutable std::string MDN;
+    mutable std::string MCN;   
     static BooleanExpressionNode* Postfix2Tree(const char* expr);
     void InfixFilter(const char *instr, char *outstr);
     void Infix2Postfix(const char *instr, char *outstr);
@@ -248,11 +328,15 @@ public:
     [[nodiscard]] BooleanExpression zhegalkin() const;
     [[nodiscard]] BooleanExpression SDNF() const;
     [[nodiscard]] BooleanExpression SKNF() const;
+    [[nodiscard]] BooleanExpression Minimized() const;
     [[nodiscard]] std::string table() const;
+    BooleanExpression MinimizedCNF() const;
+    std::string GetMinimizedCNF() const; 
     std::string GetZhegalkin() const;
     std::string GetSDNF() const;
     std::string GetSKNF() const;
+    std::string GetMinimizedDNF() const;
     explicit operator std::string() const;
 };
-[[nodiscard]] bool isFullSystem(const std::vector<BooleanExpression>&);
+[[nodiscard]] std::string isFullSystem(const std::vector<BooleanExpression>&);
 bool Monotonic(const std::string& left,const std::string& right);
